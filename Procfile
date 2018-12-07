@@ -1,1 +1,1 @@
-web: java -cp target/classes/:target/dependency/* src.main.java.Main
+web: java $JAVA_OPTS src/main/java/Main
