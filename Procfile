@@ -1,1 +1,1 @@
-web: java -cp webmodule/target/classes:webmodule/target/dependency/* com.endava.Main
+web: java -jar target/${project.artifactId}-${project.version}.jar
