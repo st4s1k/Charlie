@@ -1,1 +1,1 @@
-web: java $JAVA_OPTS src/main/java/Main
+web: java -cp webmodule/target/classes:webmodule/target/dependency/* com.endava.Main
