@@ -35,21 +35,6 @@
                     </archive>
                 </configuration>
             </plugin>
-            <!-- https://mvnrepository.com/artifact/com.heroku.sdk/heroku-maven-plugin -->
-            <plugin>
-                <groupId>com.heroku.sdk</groupId>
-                <artifactId>heroku-maven-plugin</artifactId>
-                <version>2.0.6</version>
-                <configuration>
-                    <includeTarget>false</includeTarget>
-                    <includes>
-                        <include>target/${project.artifactId}-${project.version}.jar</include>
-                    </includes>
-                    <processTypes>
-                        <web>java -jar target/${project.artifactId}-${project.version}.jar</web>
-                    </processTypes>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 

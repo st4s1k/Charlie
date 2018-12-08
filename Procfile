@@ -1,1 +1,1 @@
-web: java -jar target/${project.artifactId}-${project.version}.jar
+web: java -jar target/Charlie-1.0-SNAPSHOT.jar
