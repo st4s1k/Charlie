@@ -26,7 +26,8 @@
                 <configuration>
                     <jdkVersion>1.8</jdkVersion>
                     <processTypes>
-                        <web>java -jar target/${project.artifactId}-${project.version}.jar</web>
+                        <!--<web>java -jar target/${project.artifactId}-${project.version}.jar</web>-->
+                        <web>java $JAVA_OPTS -cp target/classes:target/dependency/* Main</web>
                     </processTypes>
                 </configuration>
             </plugin>
