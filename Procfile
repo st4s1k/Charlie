@@ -1,1 +1,0 @@
-web: java -jar target/Charlie-1.0-SNAPSHOT.jar
