@@ -7,7 +7,6 @@
     <groupId>com.endava</groupId>
     <artifactId>Charlie</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
 
     <build>
         <plugins>
@@ -23,13 +22,28 @@
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>deps/</classpathPrefix>
+                            <mainClass>Main</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>com.heroku.sdk</groupId>
                 <artifactId>heroku-maven-plugin</artifactId>
                 <version>2.0.6</version>
                 <configuration>
                     <jdkVersion>1.8</jdkVersion>
                     <processTypes>
-                        <web>java $JAVA_OPTS -cp target/classes:target/dependency/* Main</web>
+                        <web>java -jar target/${project.artifactId}-${project.version}.jar</web>
                     </processTypes>
                 </configuration>
             </plugin>
@@ -40,24 +54,16 @@
                 <version>3.1.1</version>
                 <executions>
                     <execution>
-                        <id>copy</id>
+                        <id>copy-dependencies</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>copy</goal>
+                            <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.telegram</groupId>
-                                    <artifactId>telegrambots</artifactId>
-                                    <version>4.1</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>target/dependency/</outputDirectory>
-                                    <destFileName>telegrambots.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                            <!-- other configurations here -->
+                            <outputDirectory>${project.build.directory}/deps</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
                         </configuration>
                     </execution>
                 </executions>
