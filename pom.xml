@@ -25,10 +25,9 @@
                 <version>2.0.6</version>
                 <configuration>
                     <jdkVersion>1.8</jdkVersion>
-                    <processTypes>
+                    <!--<processTypes>-->
                         <!--<web>java -jar target/${project.artifactId}-${project.version}.jar</web>-->
-                        <web>java $JAVA_OPTS -cp target/classes:target/dependency/* Main</web>
-                    </processTypes>
+                    <!--</processTypes>-->
                 </configuration>
             </plugin>
         </plugins>
