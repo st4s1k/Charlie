@@ -8,6 +8,11 @@
     <artifactId>Charlie</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <properties>
+        <heroku.appName>charlie12bot</heroku.appName>
+        <jar.name>${project.artifactId}-${project.version}.jar</jar.name>
+    </properties>
+
     <build>
         <plugins>
 
@@ -20,21 +25,6 @@
                     <target>8</target>
                 </configuration>
             </plugin>
-
-            <!--<plugin>-->
-                <!--<groupId>org.apache.maven.plugins</groupId>-->
-                <!--<artifactId>maven-jar-plugin</artifactId>-->
-                <!--<version>3.1.0</version>-->
-                <!--<configuration>-->
-                    <!--<archive>-->
-                        <!--<manifest>-->
-                            <!--<addClasspath>true</addClasspath>-->
-                            <!--<classpathPrefix>deps/</classpathPrefix>-->
-                            <!--<mainClass>Main</mainClass>-->
-                        <!--</manifest>-->
-                    <!--</archive>-->
-                <!--</configuration>-->
-            <!--</plugin>-->
 
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -65,33 +55,12 @@
                 <artifactId>heroku-maven-plugin</artifactId>
                 <version>2.0.6</version>
                 <configuration>
-                    <jdkVersion>1.8</jdkVersion>
+                    <appName>${heroku.appName}</appName>
                     <processTypes>
-                        <worker>java -Dfile.encoding=UTF-8 -jar target/${project.artifactId}-${project.version}.jar</worker>
+                        <worker>java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -jar target/${jar.name}</worker>
                     </processTypes>
                 </configuration>
             </plugin>
-
-            <!--<plugin>-->
-                <!--<groupId>org.apache.maven.plugins</groupId>-->
-                <!--<artifactId>maven-dependency-plugin</artifactId>-->
-                <!--<version>3.1.1</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>copy-dependencies</id>-->
-                        <!--<phase>package</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>copy-dependencies</goal>-->
-                        <!--</goals>-->
-                        <!--<configuration>-->
-                            <!--<outputDirectory>${project.build.directory}/deps</outputDirectory>-->
-                            <!--<overWriteReleases>false</overWriteReleases>-->
-                            <!--<overWriteSnapshots>false</overWriteSnapshots>-->
-                            <!--<overWriteIfNewer>true</overWriteIfNewer>-->
-                        <!--</configuration>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
 
         </plugins>
     </build>
@@ -102,6 +71,12 @@
             <groupId>org.telegram</groupId>
             <artifactId>telegrambots</artifactId>
             <version>4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mariuszgromada.math</groupId>
+            <artifactId>MathParser.org-mXparser</artifactId>
+            <version>4.0.0</version>
         </dependency>
 
     </dependencies>

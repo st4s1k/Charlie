@@ -1,3 +1,5 @@
+import org.mariuszgromada.math.mxparser.Expression;
+import org.mariuszgromada.math.mxparser.mXparser;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -13,9 +15,36 @@ public class Charlie extends TelegramLongPollingBot {
 
         if (update.hasMessage() && update.getMessage().hasText()) {
 
+            String receivedMessage = update.getMessage().getText();
+
+            StringBuilder messageString = new StringBuilder();
+
+            messageString
+                    .append("Hey, ")
+                    .append(update
+                            .getMessage()
+                            .getFrom()
+                            .getFirstName())
+                    .append("!\n");
+
+            Expression expression = new Expression(receivedMessage);
+
+            try {
+                if (expression.checkSyntax() || expression.checkLexSyntax()) {
+                    messageString
+                            .append(expression.getExpressionString())
+                            .append(" = ")
+                            .append(expression.calculate());
+                } else {
+                    messageString.append(expression.getErrorMessage());
+                }
+            } catch (Exception e) {
+                messageString.append(e.getMessage());
+            }
+
             SendMessage message = new SendMessage()
                     .setChatId(update.getMessage().getChatId())
-                    .setText(update.getMessage().getText());
+                    .setText(messageString.toString());
 
             try {
                 execute(message);
