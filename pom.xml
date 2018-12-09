@@ -67,7 +67,7 @@
                 <configuration>
                     <jdkVersion>1.8</jdkVersion>
                     <processTypes>
-                        <web>java -jar target/${project.artifactId}-${project.version}.jar</web>
+                        <web>java -Dfile.encoding=UTF-8 -jar target/${project.artifactId}-${project.version}.jar</web>
                     </processTypes>
                 </configuration>
             </plugin>
