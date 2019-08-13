@@ -6,10 +6,10 @@
 
     <groupId>com.endava</groupId>
     <artifactId>Charlie</artifactId>
-    <version>${app-version}</version>
+    <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <heroku.appName>charlie12bot</heroku.appName>
+        <heroku.appName>charlie-charles</heroku.appName>
         <jar.name>${project.artifactId}-${project.version}.jar</jar.name>
     </properties>
 
@@ -19,10 +19,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
                 <configuration>
-                    <source>${java.runtime.version}</source>
-                    <target>${java.runtime.version}</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
 
