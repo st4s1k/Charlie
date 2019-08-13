@@ -9,6 +9,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.comparing;
 
 public class Charlie extends TelegramLongPollingBot {
 
@@ -30,184 +33,129 @@ public class Charlie extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-
         if (update.hasMessage() && update.getMessage().hasText()) {
-
-            // Receiving
-
             String receivedMessage = update.getMessage().getText();
-
-            // Handling
-
-            StringBuilder messageString = new StringBuilder();
-
-            mXparser.enableUlpRounding();
-
-            Expression expression = new Expression(
-                    receivedMessage,
-                    functions.toArray(new Function[0])
-            );
-
-            Function function = new Function(
-                    receivedMessage,
-                    arguments.toArray(new Argument[0])
-            );
-
-            Argument argument = new Argument(
-                    receivedMessage,
-                    arguments.toArray(new Argument[0])
-            );
-
-            try {
-                if (expression.checkLexSyntax()) {
-
-                    messageString
-                            .append("isExpression: ")
-                            .append(expression.checkSyntax() == Expression.NO_SYNTAX_ERRORS)
-                            .append('\n')
-                            .append(expression.getErrorMessage())
-                            .append("\n\n")
-                            .append("isFunction: ")
-                            .append(function.checkSyntax() == Function.NO_SYNTAX_ERRORS)
-                            .append('\n')
-                            .append(function.getErrorMessage())
-                            .append("\n\n")
-                            .append("isArgument: ")
-                            .append(argument.checkSyntax() == Argument.NO_SYNTAX_ERRORS)
-                            .append('\n')
-                            .append(argument.getErrorMessage())
-                            .append("\n\n");
-
-                     if (expression.checkSyntax() == Expression.NO_SYNTAX_ERRORS) {
-
-                        messageString
-                                .append(expression.getExpressionString())
-                                .append(" = ")
-                                .append(expression.calculate());
-
-                    } else if (function.checkSyntax() == Function.NO_SYNTAX_ERRORS) {
-
-                        messageString
-                                .append("Function saved:\n")
-                                .append(function.getFunctionName())
-                                .append(" = ")
-                                .append(function.getFunctionExpressionString());
-
-
-                         functions.removeIf( a ->
-                             a.getFunctionName().equals(function.getFunctionName())
-                        );
-
-                         functions.add(function);
-
-                        for (int i = 0; i < function.getArgumentsNumber(); i++) {
-                            arguments.add(function.getArgument(i));
-                        }
-
-                    } else  if (argument.checkSyntax() == Argument.NO_SYNTAX_ERRORS) {
-
-                        messageString
-                                .append("Argument saved:\n")
-                                .append(argument.getArgumentName())
-                                .append(" = ")
-                                .append(argument.getArgumentValue());
-
-                        arguments.removeIf( a ->
-                                a.getArgumentName().equals(argument.getArgumentName())
-                        );
-
-                        arguments.add(argument);
-
-                    } else {
-
-                        messageString.append(expression.getErrorMessage());
-
-                    }
-                } else {
-
-                    switch (receivedMessage) {
-                        case "/start":
-
-                            messageString
-                                    .append("Hey, ").append(update.getMessage().getFrom().getFirstName()).append("!\n")
-                                    .append("I'm ").append(getMe().getFirstName()).append("! ")
-                                    .append("A telegram bot able to parse mathematical expressions.\n")
-                                    .append("My creator is @st4s1k.\n")
-                                    .append("I am using the library mXparser to evaluate your expressions, ")
-                                    .append("you can check it's abilities here:\n")
-                                    .append("http://mathparser.org/mxparser-tutorial/\n")
-                                    .append("Type /help for help.");
-                            break;
-
-                        case "/help":
-
-                            messageString
-                                    .append("/help - display this mesage\n\n")
-                                    .append("/args - display list of saved arguments (variables)\n\n")
-                                    .append("/funcs - display list of saved symbolic functions\n\n")
-                                    .append("Declaring a function: \"f(x, y, z, ...) = ...\" \n\n")
-                                    .append("Declaring an argument (variable):\n")
-                                    .append("\"x\", \"y\", \"z\", etc. \n")
-                                    .append("\"x = 10\", \"y = e (2,71..)\", \"z = pi (3.14..)\", etc. \n\n");
-
-                            break;
-
-                        case "/args":
-
-                            arguments.sort(Comparator.comparing(Argument::getArgumentName));
-
-                            messageString.append("Saved arguments:\n");
-
-                            for (Argument a: arguments) {
-                                messageString
-                                        .append(a.getArgumentName())
-                                        .append(" = ")
-                                        .append(a.getArgumentValue()).append('\n');
-                            }
-                            break;
-
-                        case "/funcs":
-
-                            functions.sort(Comparator.comparing(Function::getFunctionName));
-
-                            messageString.append("Saved functions:\n");
-                            for (Function f: functions) {
-                                messageString
-                                        .append(f.getFunctionName())
-                                        .append(" = ")
-                                        .append(f.getFunctionExpressionString()).append('\n');
-                            }
-                            break;
-
-                        default:
-
-                            execute(new SendMessage()
-                                    .setChatId(opChatId)
-                                    .setText(
-                                            "Firstname: " + update.getMessage().getFrom().getFirstName() +
-                                                    "\nLastname: " + update.getMessage().getFrom().getLastName() +
-                                                    "\nUsername: @" + update.getMessage().getFrom().getUserName() +
-                                                    "\nMessage:\n" + receivedMessage
-                                    )
-                            );
-                    }
-                }
-            } catch (Exception e) {
-                messageString.append(e.getMessage());
-            }
-
-            // Sending
-
-            SendMessage message = new SendMessage()
-                    .setChatId(update.getMessage().getChatId())
-                    .setText(messageString.toString());
-
+            String response = parse(receivedMessage, update);
+            SendMessage message = new SendMessage().setChatId(update.getMessage().getChatId()).setText(response);
             try {
                 execute(message);
             } catch (TelegramApiException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    private String parse(String receivedMessage, Update update) {
+
+        StringBuilder response = new StringBuilder();
+
+        Expression expression = new Expression(receivedMessage, functions.toArray(new Function[0]));
+
+        if (expression.checkLexSyntax() == Expression.NO_SYNTAX_ERRORS) {
+            response.append(parseExpression(response, receivedMessage, expression));
+        } else {
+            response.append(parseMessage(receivedMessage, update));
+        }
+
+        return response.toString();
+    }
+
+    private String parseFunction(StringBuilder response, Function function) {
+        response.append("Function saved:\n")
+                .append(function.getFunctionName()).append(" = ")
+                .append(function.getFunctionExpressionString());
+        functions.removeIf(a -> a.getFunctionName().equals(function.getFunctionName()));
+        functions.add(function);
+        for (int i = 0; i < function.getArgumentsNumber(); i++) {
+            arguments.add(function.getArgument(i));
+        }
+        return response.toString();
+    }
+
+    private String parseArgument(StringBuilder response, Argument argument) {
+        response.append("Argument saved:\n")
+                .append(argument.getArgumentName())
+                .append(" = ")
+                .append(argument.getArgumentValue());
+        arguments.removeIf(a -> a.getArgumentName().equals(argument.getArgumentName()));
+        arguments.add(argument);
+        return response.toString();
+    }
+
+    private String parseExpression(StringBuilder response, String receivedMessage, Expression expression) {
+
+        mXparser.enableUlpRounding();
+
+        Function function = new Function(receivedMessage, arguments.toArray(new Argument[0]));
+        Argument argument = new Argument(receivedMessage, arguments.toArray(new Argument[0]));
+
+        response.append(expression.getExpressionString()).append(" = ")
+                .append(expression.calculate());
+
+        if (function.checkSyntax() == Function.NO_SYNTAX_ERRORS) {
+            response.append(parseFunction(response, function));
+        } else if (argument.checkSyntax() == Argument.NO_SYNTAX_ERRORS) {
+            response.append(parseArgument(response, argument));
+        } else {
+            response.append(expression.getErrorMessage());
+        }
+        return response.toString();
+    }
+
+    private String parseMessage(String receivedMessage, Update update) {
+        String response;
+        switch (receivedMessage) {
+            case "/start":
+                response = getStartMessage(update);
+                break;
+            case "/help":
+                response = getHelpMessage();
+                break;
+            case "/args":
+                response = "Saved arguments:\n" + arguments.stream()
+                        .sorted(comparing(Argument::getArgumentName))
+                        .map(a -> a.getArgumentName() + " = " + a.getArgumentValue() + "\n")
+                        .collect(Collectors.joining());
+                break;
+            case "/funcs":
+                response = "Saved functions:\n" + functions.stream()
+                        .sorted(comparing(Function::getFunctionName))
+                        .map(f -> f.getFunctionName() + " = " + f.getFunctionExpressionString() + "\n")
+                        .collect(Collectors.joining());
+                break;
+            default:
+                response = "Unknown command";
+        }
+        return response;
+    }
+
+    private String getHelpMessage() {
+        return "/help - display this message\n\n"
+                + "/args - display list of saved arguments (variables)\n\n"
+                + "/funcs - display list of saved symbolic functions\n\n"
+                + "Declaring a function: \"f(x, y, z, ...) = ...\" \n\n"
+                + "Declaring an argument (variable):\n"
+                + "\"x\", \"y\", \"z\", etc. \n"
+                + "\"x = 10\", \"y = e (2,71..)\", \"z = pi (3.14..)\", etc. \n\n";
+    }
+
+    private String getStartMessage(Update update) {
+        String botName = "(undefined)";
+
+        try {
+            botName = getMe().getFirstName();
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+
+        return "Hey, " + update.getMessage().getFrom().getFirstName() + "!\n"
+                + "I'm " + botName + "! "
+                + "A telegram bot able to parse mathematical expressions.\n"
+                + "My creator is @st4s1k.\n"
+                + "I am using the library mXparser to evaluate your expressions, "
+                + "you can check it's abilities here:\n"
+                + "http://mathparser.org/mxparser-tutorial/\n"
+                + "Type /help for help.";
     }
 
     @Override
