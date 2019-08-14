@@ -29,41 +29,18 @@
                 </configuration>
             </plugin>
 
-<!--            <plugin>-->
-<!--                <artifactId>maven-assembly-plugin</artifactId>-->
-<!--                <configuration>-->
-<!--                    -->
-<!--                    <archive>-->
-<!--                        <manifest>-->
-<!--                            <mainClass>Main</mainClass>-->
-<!--                        </manifest>-->
-<!--                    </archive>-->
-<!--                    <descriptorRefs>-->
-<!--                        <descriptorRef>jar-with-dependencies</descriptorRef>-->
-<!--                    </descriptorRefs>-->
-<!--                    <appendAssemblyId>true</appendAssemblyId>-->
-<!--                </configuration>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>make-assembly</id>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>single</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
-
             <plugin>
                 <groupId>com.heroku.sdk</groupId>
                 <artifactId>heroku-maven-plugin</artifactId>
                 <version>2.0.6</version>
                 <configuration>
                     <appName>${heroku.appName}</appName>
-                    <processTypes>
+                    <jdkVersion>${jdk.version}</jdkVersion>
+                    <configVars>
                         <MAIN_CLASS>src/main/java/Main</MAIN_CLASS>
                         <JAVA_OPTS>-Dserver.port=$PORT -Dfile.encoding=UTF-8</JAVA_OPTS>
-<!--                        <worker>java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -jar target/${jarName}</worker>-->
+                    </configVars>
+                    <processTypes>
                         <web>java $JAVA_OPTS -cp target/classes:target/dependency/* $MAIN_CLASS</web>
                     </processTypes>
                 </configuration>
