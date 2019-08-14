@@ -30,33 +30,33 @@ public class Charlie extends TelegramLongPollingBot {
 
     private static Map<String, java.util.function.Function<Update, String>> commands = new HashMap<>();
 
-	static {
-		commands.put("/start", Charlie::getStartMessage);
+    static {
+        commands.put("/start", Charlie::getStartMessage);
 
-		commands.put("/help", update -> getHelpMessage());
+        commands.put("/help", update -> getHelpMessage());
 
-		commands.put("/args", update -> "Saved arguments:\n" + arguments.entrySet().stream()
-				.sorted(comparing(Map.Entry::getKey))
-				.map(Map.Entry::getValue)
-				.map(a -> a.getArgumentName() + " = " + a.getArgumentValue() + "\n")
-				.collect(Collectors.joining()));
+        commands.put("/args", update -> "Saved arguments:\n" + arguments.entrySet().stream()
+                .sorted(comparing(Map.Entry::getKey))
+                .map(Map.Entry::getValue)
+                .map(a -> a.getArgumentName() + " = " + a.getArgumentValue() + "\n")
+                .collect(Collectors.joining()));
 
-		commands.put("/funcs", update -> "Saved functions:\n" + functions.entrySet().stream()
-				.sorted(comparing(Map.Entry::getKey))
-				.map(Map.Entry::getValue)
-				.map(f -> f.getFunctionName() + " = " + f.getFunctionExpressionString() + "\n")
-				.collect(Collectors.joining()));
+        commands.put("/funcs", update -> "Saved functions:\n" + functions.entrySet().stream()
+                .sorted(comparing(Map.Entry::getKey))
+                .map(Map.Entry::getValue)
+                .map(f -> f.getFunctionName() + " = " + f.getFunctionExpressionString() + "\n")
+                .collect(Collectors.joining()));
 
-		commands.put("/clrargs", update -> {
-			arguments = new HashMap<>();
-			return "Arguments successfully cleared!";
-		});
+        commands.put("/clrargs", update -> {
+            arguments = new HashMap<>();
+            return "Arguments successfully cleared!";
+        });
 
-		commands.put("/clrfuncs", update -> {
-			functions = new HashMap<>();
-			return "Functions successfully cleared!";
-		});
-	}
+        commands.put("/clrfuncs", update -> {
+            functions = new HashMap<>();
+            return "Functions successfully cleared!";
+        });
+    }
 
     public Charlie(String userName, String token, long opChatId) {
         this.userName = userName;
@@ -70,7 +70,7 @@ public class Charlie extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
 
             String receivedMessage = update.getMessage().getText();
-            String response = parse(receivedMessage);
+            String response = parse(receivedMessage, update);
 
             SendMessage message = new SendMessage()
                     .setChatId(update.getMessage().getChatId())
@@ -84,7 +84,7 @@ public class Charlie extends TelegramLongPollingBot {
         }
     }
 
-    private String parse(String receivedMessage) {
+    private String parse(String receivedMessage, Update update) {
 
         StringBuilder response = new StringBuilder();
 
@@ -93,8 +93,8 @@ public class Charlie extends TelegramLongPollingBot {
         if (expression.checkLexSyntax() == Expression.NO_SYNTAX_ERRORS) {
             response.append(parseExpression(response, receivedMessage, expression));
         } else {
-            response.append(Optional.ofNullable(commands.get(receivedMessage))
-					.orElse(update -> "Unknown command"));
+            response.append(Optional.ofNullable(commands.get(receivedMessage).apply(update))
+                    .orElse("Unknown command"));
         }
 
         return response.toString();
@@ -103,19 +103,19 @@ public class Charlie extends TelegramLongPollingBot {
     private String parseFunction(StringBuilder response, Function function) {
         functions.put(function.getFunctionName(), function);
         function = functions.get(function.getFunctionName());
-		response.append("Function saved:\n")
-				.append(function.getFunctionName()).append(" = ")
-				.append(function.getFunctionExpressionString());
+        response.append("Function saved:\n")
+                .append(function.getFunctionName()).append(" = ")
+                .append(function.getFunctionExpressionString());
         return response.toString();
     }
 
     private String parseArgument(StringBuilder response, Argument argument) {
         arguments.put(argument.getArgumentName(), argument);
         argument = arguments.get(argument.getArgumentName());
-		response.append("Argument saved:\n")
-				.append(argument.getArgumentName())
-				.append(" = ")
-				.append(argument.getArgumentValue());
+        response.append("Argument saved:\n")
+                .append(argument.getArgumentName())
+                .append(" = ")
+                .append(argument.getArgumentValue());
         return response.toString();
     }
 
