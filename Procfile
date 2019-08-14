@@ -1,1 +1,1 @@
-worker: java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -jar target/Charlie-1.0-SNAPSHOT.jar
+worker: java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -jar target/charlie-charles-jar-with-dependencies.jar

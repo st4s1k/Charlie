@@ -2,10 +2,113 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b0761389-f92a-416a-af04-da5b27651d01" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Procfile" beforeDir="false" afterPath="$PROJECT_DIR$/Procfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/Charlie.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Charlie.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/system.properties" beforeDir="false" afterPath="$PROJECT_DIR$/system.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/Charlie-1.0-SNAPSHOT.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/Charlie-null.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/Charlie.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/Charlie.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/Main.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/MathParser.org-mXparser-4.2.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/aopalliance-1.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/aopalliance-repackaged-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/commons-codec-1.9.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/commons-io-2.5.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/commons-logging-1.2.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/grizzly-framework-2.3.28.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/grizzly-http-2.3.28.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/grizzly-http-server-2.3.28.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/guava-19.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/guice-4.1.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/hk2-api-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/hk2-locator-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/hk2-utils-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/httpclient-4.5.3.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/httpcore-4.4.6.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/httpmime-4.5.3.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jackson-annotations-2.8.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jackson-core-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jackson-databind-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jackson-jaxrs-base-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jackson-jaxrs-json-provider-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jackson-module-jaxb-annotations-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/javassist-3.20.0-GA.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/javax.annotation-api-1.2.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/javax.inject-1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/javax.inject-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/javax.ws.rs-api-2.0.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jersey-client-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jersey-common-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jersey-container-grizzly2-http-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jersey-entity-filtering-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jersey-guava-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jersey-media-jaxb-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jersey-media-json-jackson-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/jersey-server-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/json-20160810.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/osgi-resource-locator-1.0.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/telegrambots-4.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/telegrambots-meta-4.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/dependency/validation-api-1.1.0.Final.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/.heroku-deploy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/Procfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/system.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/Charlie-1.0-SNAPSHOT.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/Charlie-null.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/classes/Charlie.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/classes/Main.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/MathParser.org-mXparser-4.2.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/aopalliance-1.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/aopalliance-repackaged-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/commons-codec-1.9.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/commons-io-2.5.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/commons-logging-1.2.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/grizzly-framework-2.3.28.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/grizzly-http-2.3.28.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/grizzly-http-server-2.3.28.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/guava-19.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/guice-4.1.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/hk2-api-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/hk2-locator-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/hk2-utils-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/httpclient-4.5.3.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/httpcore-4.4.6.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/httpmime-4.5.3.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jackson-annotations-2.8.0.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jackson-core-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jackson-databind-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jackson-jaxrs-base-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jackson-jaxrs-json-provider-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jackson-module-jaxb-annotations-2.8.7.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/javassist-3.20.0-GA.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/javax.annotation-api-1.2.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/javax.inject-1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/javax.inject-2.5.0-b32.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/javax.ws.rs-api-2.0.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jersey-client-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jersey-common-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jersey-container-grizzly2-http-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jersey-entity-filtering-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jersey-guava-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jersey-media-jaxb-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jersey-media-json-jackson-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/jersey-server-2.25.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/json-20160810.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/osgi-resource-locator-1.0.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/telegrambots-4.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/telegrambots-meta-4.1.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/dependency/validation-api-1.1.0.Final.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/maven-archiver/pom.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/app/target/mvn-dependency-list.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/heroku/build.tgz" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-archiver/pom.properties" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-archiver/pom.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/mvn-dependency-list.log" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -15,6 +118,7 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="SET_USER_NAME_GLOBALLY" value="false" />
   </component>
   <component name="MavenImportPreferences">
     <option name="importingSettings">
@@ -24,8 +128,15 @@
     </option>
   </component>
   <component name="ProjectId" id="1PN7ZQuR4arV5Z3JbQsIq3LrWQ0" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="PropertiesComponent">
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="project.structure.last.edited" value="Project" />
+    <property name="project.structure.proportion" value="0.0" />
+    <property name="project.structure.side.proportion" value="0.0" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -71,7 +182,9 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
           </value>
         </entry>
       </map>

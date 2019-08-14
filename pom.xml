@@ -4,13 +4,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.endava</groupId>
-    <artifactId>Charlie</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>com.st4s1k</groupId>
+    <artifactId>charlie</artifactId>
+    <version>charles</version>
+    <packaging>jar</packaging>
 
     <properties>
-        <heroku.appName>charlie-charles</heroku.appName>
-        <jar.name>${project.artifactId}-${project.version}.jar</jar.name>
+        <heroku.appName>${project.artifactId}-${project.version}</heroku.appName>
+        <jarName>${project.artifactId}-${project.version}.jar</jarName>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jdk.version>1.8</jdk.version>
     </properties>
 
     <build>
@@ -19,9 +22,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
                 </configuration>
             </plugin>
 
@@ -36,7 +40,7 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
-                    <appendAssemblyId>false</appendAssemblyId>
+                    <appendAssemblyId>true</appendAssemblyId>
                 </configuration>
                 <executions>
                     <execution>
@@ -56,7 +60,7 @@
                 <configuration>
                     <appName>${heroku.appName}</appName>
                     <processTypes>
-                        <worker>java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -jar target/${jar.name}</worker>
+                        <worker>java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -jar target/${jarName}</worker>
                     </processTypes>
                 </configuration>
             </plugin>
