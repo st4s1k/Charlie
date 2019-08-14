@@ -7,7 +7,7 @@
     <groupId>com.st4s1k</groupId>
     <artifactId>charlie</artifactId>
     <version>charles</version>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
 
     <properties>
         <heroku.appName>${project.artifactId}-${project.version}</heroku.appName>
@@ -40,30 +40,9 @@
                         <JAVA_OPTS>-Dserver.port=$PORT -Dfile.encoding=UTF-8</JAVA_OPTS>
                     </configVars>
                     <processTypes>
-                        <web>java $JAVA_OPTS -cp target/classes:target/dependency/* $MAIN_CLASS</web>
+                        <worker>java $JAVA_OPTS -cp target/classes:target/dependency/* $MAIN_CLASS</worker>
                     </processTypes>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals><goal>copy</goal></goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>com.github.jsimone</groupId>
-                                    <artifactId>webapp-runner</artifactId>
-                                    <version>9.0.20.0</version>
-                                    <destFileName>webapp-runner.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
         </plugins>
