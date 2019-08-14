@@ -37,8 +37,8 @@
                     <jdkVersion>${jdk.version}</jdkVersion>
                     <configVars>
                         <JAVA_OPTS>-Dserver.port=$PORT -Dfile.encoding=UTF-8</JAVA_OPTS>
-                        <CLASS_PATH>${project.basedir}:${project.basedir}/target/classes/*</CLASS_PATH>
-                        <MAIN_CLASS>${project.basedir}/src/main/java/Main</MAIN_CLASS>
+                        <CLASS_PATH>.:./target/classes/*</CLASS_PATH>
+                        <MAIN_CLASS>Main</MAIN_CLASS>
                     </configVars>
                     <processTypes>
                         <worker>java $JAVA_OPTS -cp $CLASS_PATH $MAIN_CLASS</worker>

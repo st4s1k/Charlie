@@ -1,1 +1,1 @@
-worker: java $JAVA_OPTS -cp $CLASS_PATH $MAIN_CLASS
+worker: java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -cp .:/target/classes/* Main
