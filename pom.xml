@@ -61,8 +61,10 @@
                 <configuration>
                     <appName>${heroku.appName}</appName>
                     <processTypes>
+                        <MAIN_CLASS>src/main/java/Main</MAIN_CLASS>
+                        <JAVA_OPTS>-Dserver.port=$PORT -Dfile.encoding=UTF-8</JAVA_OPTS>
 <!--                        <worker>java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -jar target/${jarName}</worker>-->
-                        <web>java $JAVA_OPTS -cp target/classes:target/dependency/* Main</web>
+                        <web>java $JAVA_OPTS -cp target/classes:target/dependency/* $MAIN_CLASS</web>
                     </processTypes>
                 </configuration>
             </plugin>
