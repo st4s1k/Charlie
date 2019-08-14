@@ -36,11 +36,12 @@
                     <appName>${heroku.appName}</appName>
                     <jdkVersion>${jdk.version}</jdkVersion>
                     <configVars>
-                        <MAIN_CLASS>src/main/java/Main</MAIN_CLASS>
+                        <MAIN_CLASS>${project.basedir}/src/main/java/Main</MAIN_CLASS>
+                        <CLASS_PATH>${project.basedir}/target/classes/*</CLASS_PATH>
                         <JAVA_OPTS>-Dserver.port=$PORT -Dfile.encoding=UTF-8</JAVA_OPTS>
                     </configVars>
                     <processTypes>
-                        <worker>java $JAVA_OPTS -cp target/classes:target/dependency/* $MAIN_CLASS</worker>
+                        <worker>java $JAVA_OPTS -cp $CLASS_PATH $MAIN_CLASS</worker>
                     </processTypes>
                 </configuration>
             </plugin>

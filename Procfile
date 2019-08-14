@@ -1,1 +1,1 @@
-worker: java $JAVA_OPTS -cp target/classes:target/dependency/* $MAIN_CLASS
+worker: java $JAVA_OPTS -cp $CLASS_PATH $MAIN_CLASS
