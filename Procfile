@@ -1,1 +1,1 @@
-worker: java -Dserver.port=$PORT -Dfile.encoding=UTF-8 -jar target/charlie-charles-jar-with-dependencies.jar
+worker: java $JAVA_OPTS -cp target/classes:target/dependency/* Main
