@@ -13,9 +13,11 @@
     <heroku.appName>${project.artifactId}-${project.version}</heroku.appName>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jdk.version>1.8</jdk.version>
+    <heroku.version>2.0.12</heroku.version>
     <telegrambots.version>4.4.0.1</telegrambots.version>
     <mxparser.version>4.3.3</mxparser.version>
     <jsch.version>0.1.55</jsch.version>
+    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
   </properties>
 
   <dependencies>
@@ -41,7 +43,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
+        <version>${maven-compiler-plugin.version}</version>
         <configuration>
           <source>${jdk.version}</source>
           <target>${jdk.version}</target>
@@ -50,7 +52,7 @@
       <plugin>
         <groupId>com.heroku.sdk</groupId>
         <artifactId>heroku-maven-plugin</artifactId>
-        <version>2.0.6</version>
+        <version>${heroku.version}</version>
         <configuration>
           <appName>${heroku.appName}</appName>
           <jdkVersion>${jdk.version}</jdkVersion>
