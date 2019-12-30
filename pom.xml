@@ -18,6 +18,7 @@
     <mxparser.version>4.3.3</mxparser.version>
     <jsch.version>0.1.55</jsch.version>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+    <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
   </properties>
 
   <dependencies>
@@ -48,6 +49,18 @@
           <source>${jdk.version}</source>
           <target>${jdk.version}</target>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>${maven-dependency-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals><goal>copy-dependencies</goal></goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>com.heroku.sdk</groupId>
