@@ -4,172 +4,206 @@ import org.mariuszgromada.math.mxparser.Function;
 import org.mariuszgromada.math.mxparser.mXparser;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Chat;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.api.objects.User;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static java.util.Comparator.comparing;
+import static java.util.Map.Entry;
+import static java.util.Map.Entry.comparingByKey;
 
 public class Charlie extends TelegramLongPollingBot {
 
-    private String userName;
+  private String token;
+  private String botUserName;
+  private Map<Long, Session> sessions = new HashMap<>();
+  private Map<String, java.util.function.Function<Session, String>> commands = new HashMap<>();
 
-    private String token;
+  {
+    commands.put("/start", Charlie::getStartMessage);
 
-    private long opChatId;
+    commands.put("/help", session -> getHelpMessage());
 
-    private static Map<String, Argument> arguments = new HashMap<>();
+    commands.put("/args", session -> "Saved arguments:\n" +
+        session.getArguments().entrySet().stream()
+            .sorted(comparingByKey())
+            .map(Entry::getValue)
+            .map(a -> a.getArgumentName() + " = " + a.getArgumentValue() + "\n")
+            .collect(Collectors.joining()));
 
-    private static Map<String, Function> functions = new HashMap<>();
+    commands.put("/funcs", session -> "Saved functions:\n" +
+        session.getFunctions().entrySet().stream()
+            .sorted(comparingByKey())
+            .map(Entry::getValue)
+            .map(f -> f.getFunctionName() + " = " + f.getFunctionExpressionString() + "\n")
+            .collect(Collectors.joining()));
 
-    private static Map<String, java.util.function.Function<Update, String>> commands = new HashMap<>();
+    commands.put("/clra", session -> {
+      session.getArguments().clear();
+      return "Arguments successfully cleared!";
+    });
 
-    static {
-        commands.put("/start", Charlie::getStartMessage);
+    commands.put("/clrf", session -> {
+      session.getFunctions().clear();
+      return "Functions successfully cleared!";
+    });
+  }
 
-        commands.put("/help", update -> getHelpMessage());
+  public Charlie(String token, String botUserName) {
+    this.token = token;
+    this.botUserName = botUserName;
+  }
 
-        commands.put("/args", update -> "Saved arguments:\n" + arguments.entrySet().stream()
-                .sorted(comparing(Map.Entry::getKey))
-                .map(Map.Entry::getValue)
-                .map(a -> a.getArgumentName() + " = " + a.getArgumentValue() + "\n")
-                .collect(Collectors.joining()));
+  @Override
+  public String getBotUsername() {
+    return botUserName;
+  }
 
-        commands.put("/funcs", update -> "Saved functions:\n" + functions.entrySet().stream()
-                .sorted(comparing(Map.Entry::getKey))
-                .map(Map.Entry::getValue)
-                .map(f -> f.getFunctionName() + " = " + f.getFunctionExpressionString() + "\n")
-                .collect(Collectors.joining()));
+  @Override
+  public String getBotToken() {
+    return token;
+  }
 
-        commands.put("/clrargs", update -> {
-            arguments = new HashMap<>();
-            return "Arguments successfully cleared!";
-        });
+  @Override
+  public void onUpdateReceived(Update update) {
+    if (update.hasMessage() && update.getMessage().hasText()) {
 
-        commands.put("/clrfuncs", update -> {
-            functions = new HashMap<>();
-            return "Functions successfully cleared!";
-        });
-    }
+      final Message message = update.getMessage();
+      final Chat chat = message.getChat();
+      final User user = message.getFrom();
+      final Long chatId = chat.getId();
 
-    public Charlie(String userName, String token, long opChatId) {
-        this.userName = userName;
-        this.token = token;
-        this.opChatId = opChatId;
-    }
+      sessions.putIfAbsent(chatId, new Session(chat, user));
 
-    @Override
-    public void onUpdateReceived(Update update) {
+      final Session session = sessions.get(chatId);
+      final String receivedMessage = message.getText();
+      final String response = parse(session, receivedMessage);
 
-        if (update.hasMessage() && update.getMessage().hasText()) {
-
-            String receivedMessage = update.getMessage().getText();
-            String response = parse(receivedMessage, update);
-
-            SendMessage message = new SendMessage()
-                    .setChatId(update.getMessage().getChatId())
-                    .setText(response);
-
-            try {
-                execute(message);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
+      if (!response.isEmpty()) {
+        SendMessage sendMessage = new SendMessage()
+            .setChatId(chatId)
+            .setText(response);
+        try {
+          execute(sendMessage);
+        } catch (Throwable e) {
+          e.printStackTrace();
         }
+      }
+    }
+  }
+
+  private String parse(
+      final Session session,
+      final String receivedMessage) {
+
+    final StringBuilder response = new StringBuilder();
+
+    try {
+      final Expression expression = new Expression(receivedMessage);
+      final Argument[] arguments = session.getArgumentArray();
+      final Function[] functions = session.getFunctionArray();
+
+      expression.addArguments(arguments);
+      expression.addFunctions(functions);
+
+      if (expression.checkLexSyntax() == Expression.NO_SYNTAX_ERRORS) {
+        parseExpression(response, expression, session);
+      } else {
+        response.append(Optional.ofNullable(commands.get(receivedMessage))
+            .map(c -> c.apply(session))
+            .orElse("I don't understand, " + session.getUser().getFirstName() + " ..."));
+      }
+    } catch (Throwable t) {
+      response.append("\n").append(t.getMessage());
     }
 
-    private String parse(String receivedMessage, Update update) {
+    return response.toString();
+  }
 
-        StringBuilder response = new StringBuilder();
+  private void parseExpression(
+      final StringBuilder response,
+      final Expression expression,
+      final Session session) {
 
-        Expression expression = new Expression(receivedMessage, functions.values().toArray(new Function[0]));
+    mXparser.enableUlpRounding();
 
-        if (expression.checkLexSyntax() == Expression.NO_SYNTAX_ERRORS) {
-            response.append(parseExpression(response, receivedMessage, expression));
-        } else {
-            response.append(Optional.ofNullable(commands.get(receivedMessage).apply(update))
-                    .orElse("Unknown command"));
-        }
+    if (expression.checkSyntax() == Expression.NO_SYNTAX_ERRORS) {
+      response
+          .append(expression.getExpressionString())
+          .append(" = ")
+          .append(expression.calculate());
+    } else {
+      final Argument[] sessionArguments = session.getArgumentArray();
+      final Function[] sessionFunctions = session.getFunctionArray();
 
-        return response.toString();
+      final Argument argument = new Argument(expression.getExpressionString());
+      final Function function = new Function(expression.getExpressionString());
+
+      if (function.checkSyntax() == Function.NO_SYNTAX_ERRORS) {
+        function.addArguments(sessionArguments);
+        function.addFunctions(sessionFunctions);
+        session.addFunction(function);
+        response.append("\n");
+        addFunction(response, function, session);
+      } else if (argument.checkSyntax() == Argument.NO_SYNTAX_ERRORS) {
+        argument.addArguments(sessionArguments);
+        argument.addFunctions(sessionFunctions);
+        response.append("\n");
+        addArgument(response, argument, session);
+      } else {
+        response.append("\n").append(expression.getErrorMessage());
+      }
     }
+  }
 
-    private String parseFunction(StringBuilder response, Function function) {
-        functions.put(function.getFunctionName(), function);
-        function = functions.get(function.getFunctionName());
-        response.append("Function saved:\n")
-                .append(function.getFunctionName()).append(" = ")
-                .append(function.getFunctionExpressionString());
-        return response.toString();
+  private void addFunction(
+      final StringBuilder response,
+      final Function function,
+      final Session session) {
+    session.addFunction(function);
+    response
+        .append("Function saved:\n")
+        .append(function.getFunctionName()).append(" = ")
+        .append(function.getFunctionExpressionString());
+  }
+
+  private void addArgument(
+      final StringBuilder response,
+      final Argument argument,
+      final Session session) {
+    session.addArgument(argument);
+    response.append("Argument saved:\n")
+        .append(argument.getArgumentName());
+    if (!Double.isNaN(argument.getArgumentValue())) {
+      response.append(" = ").append(argument.getArgumentValue());
     }
+  }
 
-    private String parseArgument(StringBuilder response, Argument argument) {
-        arguments.put(argument.getArgumentName(), argument);
-        argument = arguments.get(argument.getArgumentName());
-        response.append("Argument saved:\n")
-                .append(argument.getArgumentName())
-                .append(" = ")
-                .append(argument.getArgumentValue());
-        return response.toString();
-    }
+  private static String getHelpMessage() {
+    return "/help - display this message\n\n"
+        + "/args - display list of saved arguments (variables)\n\n"
+        + "/funcs - display list of saved symbolic functions\n\n"
+        + "/clra - remove all saved arguments\n\n"
+        + "/clrf - remove all saved functions\n\n"
+        + "Declaring a function: \"f(x, y, z, ...) = ...\" \n\n"
+        + "Declaring an argument (variable):\n"
+        + "\"x\", \"y\", \"z\", etc. \n"
+        + "\"x = 10\", \"y = e (2,71..)\", \"z = pi (3.14..)\", etc. \n\n";
+  }
 
-    private String parseExpression(StringBuilder response, String receivedMessage, Expression expression) {
-
-        mXparser.enableUlpRounding();
-
-        Function function = new Function(receivedMessage, arguments.values().toArray(new Argument[0]));
-        Argument argument = new Argument(receivedMessage, arguments.values().toArray(new Argument[0]));
-
-        response.append(expression.getExpressionString())
-                .append(" = ")
-                .append(expression.calculate());
-
-        if (function.checkSyntax() == Function.NO_SYNTAX_ERRORS) {
-            response.append(parseFunction(response, function));
-        } else if (argument.checkSyntax() == Argument.NO_SYNTAX_ERRORS) {
-            response.append(parseArgument(response, argument));
-        } else {
-            response.append(expression.getErrorMessage());
-        }
-        return response.toString();
-    }
-
-    private static String getHelpMessage() {
-        return "/help - display this message\n\n"
-                + "/args - display list of saved arguments (variables)\n\n"
-                + "/funcs - display list of saved symbolic functions\n\n"
-                + "/clrargs - remove all saved arguments\n\n"
-                + "/clrfuncs - remove all saved functions\n\n"
-                + "Declaring a function: \"f(x, y, z, ...) = ...\" \n\n"
-                + "Declaring an argument (variable):\n"
-                + "\"x\", \"y\", \"z\", etc. \n"
-                + "\"x = 10\", \"y = e (2,71..)\", \"z = pi (3.14..)\", etc. \n\n";
-    }
-
-    private static String getStartMessage(Update update) {
-        return "Hey, " + update.getMessage().getFrom().getFirstName() + "!\n"
-                + "I'm Charlie! "
-                + "A telegram bot able to parse mathematical expressions.\n"
-                + "My creator is @st4s1k.\n"
-                + "I am using the library mXparser to evaluate your expressions, "
-                + "you can check it's abilities here:\n"
-                + "http://mathparser.org/mxparser-tutorial/\n"
-                + "Type /help for help.";
-    }
-
-    @Override
-    public String getBotUsername() {
-        return userName;
-    }
-
-    @Override
-    public String getBotToken() {
-        return token;
-    }
+  private static String getStartMessage(final Session session) {
+    return "Hey, " + session.getUser().getFirstName() + "!\n"
+        + "I'm Charlie! "
+        + "A telegram bot able to parse mathematical expressions.\n"
+        + "My creator is @st4s1k.\n"
+        + "I am using the library mXparser to evaluate your expressions, "
+        + "you can check it's abilities here:\n"
+        + "http://mathparser.org/mxparser-tutorial/\n"
+        + "Type /help for help.";
+  }
 }
