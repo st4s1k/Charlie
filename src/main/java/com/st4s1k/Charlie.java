@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Map.Entry;
 import static java.util.Map.Entry.comparingByKey;
+import static java.util.Objects.nonNull;
 
 public class Charlie extends TelegramLongPollingBot {
 
@@ -151,7 +152,8 @@ public class Charlie extends TelegramLongPollingBot {
         session.addFunction(function);
         response.append("\n");
         addFunction(function, session, response);
-      } else if (argument.checkSyntax() == Argument.NO_SYNTAX_ERRORS) {
+      } else if (argument.checkSyntax() == Argument.NO_SYNTAX_ERRORS &&
+          nonNull(argument.getArgumentName())) {
         argument.addArguments(sessionArguments);
         argument.addFunctions(sessionFunctions);
         response.append("\n");
