@@ -12,7 +12,7 @@
   <properties>
     <heroku.appName>${project.artifactId}-${project.version}</heroku.appName>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jdk.version>1.8</jdk.version>
+    <jdk.version>11</jdk.version>
     <heroku.version>2.0.12</heroku.version>
     <telegrambots.version>4.4.0.1</telegrambots.version>
     <mxparser.version>4.3.3</mxparser.version>
@@ -41,8 +41,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
-          <source>${jdk.version}</source>
-          <target>${jdk.version}</target>
+          <release>${jdk.version}</release>
         </configuration>
       </plugin>
       <plugin>

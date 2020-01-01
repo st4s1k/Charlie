@@ -4,10 +4,7 @@ import org.mariuszgromada.math.mxparser.Function;
 import org.mariuszgromada.math.mxparser.mXparser;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Chat;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +51,9 @@ public class Charlie extends TelegramLongPollingBot {
     });
   }
 
-  public Charlie(String token, String botUserName) {
+  public Charlie(
+      final String token,
+      final String botUserName) {
     this.token = token;
     this.botUserName = botUserName;
   }
@@ -70,19 +69,19 @@ public class Charlie extends TelegramLongPollingBot {
   }
 
   @Override
-  public void onUpdateReceived(Update update) {
+  public void onUpdateReceived(final Update update) {
     if (update.hasMessage() && update.getMessage().hasText()) {
 
-      final Message message = update.getMessage();
-      final Chat chat = message.getChat();
-      final User user = message.getFrom();
-      final Long chatId = chat.getId();
+      final var message = update.getMessage();
+      final var chat = message.getChat();
+      final var user = message.getFrom();
+      final var chatId = chat.getId();
 
       sessions.putIfAbsent(chatId, new Session(chat, user));
 
-      final Session session = sessions.get(chatId);
-      final String receivedMessage = message.getText();
-      final String response = parse(receivedMessage, session);
+      final var session = sessions.get(chatId);
+      final var receivedMessage = message.getText();
+      final var response = parse(receivedMessage, session);
 
       if (!response.isEmpty()) {
         SendMessage sendMessage = new SendMessage()
@@ -101,12 +100,12 @@ public class Charlie extends TelegramLongPollingBot {
       final String receivedMessage,
       final Session session) {
 
-    final StringBuilder response = new StringBuilder();
+    final var response = new StringBuilder();
 
     try {
-      final Expression expression = new Expression(receivedMessage);
-      final Argument[] arguments = session.getArgumentArray();
-      final Function[] functions = session.getFunctionArray();
+      final var expression = new Expression(receivedMessage);
+      final var arguments = session.getArgumentArray();
+      final var functions = session.getFunctionArray();
 
       expression.addArguments(arguments);
       expression.addFunctions(functions);
@@ -114,9 +113,10 @@ public class Charlie extends TelegramLongPollingBot {
       if (expression.checkLexSyntax() == Expression.NO_SYNTAX_ERRORS) {
         parseExpression(expression, session, response);
       } else {
+        final String user = session.getUser().getFirstName();
         response.append(Optional.ofNullable(commands.get(receivedMessage))
             .map(c -> c.apply(session))
-            .orElse("I don't understand, " + session.getUser().getFirstName() + " ..."));
+            .orElse("I don't understand, " + user + " ..."));
       }
     } catch (Throwable t) {
       response.append("\n").append(t.getMessage());
@@ -138,11 +138,10 @@ public class Charlie extends TelegramLongPollingBot {
           .append(" = ")
           .append(expression.calculate());
     } else {
-      final Argument[] sessionArguments = session.getArgumentArray();
-      final Function[] sessionFunctions = session.getFunctionArray();
-
-      final Argument argument = new Argument(expression.getExpressionString());
-      final Function function = new Function(expression.getExpressionString());
+      final var sessionArguments = session.getArgumentArray();
+      final var sessionFunctions = session.getFunctionArray();
+      final var argument = new Argument(expression.getExpressionString());
+      final var function = new Function(expression.getExpressionString());
 
       if (function.checkSyntax() == Function.NO_SYNTAX_ERRORS) {
         function.addArguments(sessionArguments);
@@ -197,7 +196,7 @@ public class Charlie extends TelegramLongPollingBot {
   }
 
   private static String getStartMessage(final Session session) {
-    final String user = session.getUser().getFirstName();
+    final var user = session.getUser().getFirstName();
     return "Hey, " + user + "!\n"
         + "I'm Charlie! "
         + "A telegram bot able to parse mathematical expressions.\n"
