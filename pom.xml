@@ -18,6 +18,7 @@
 
     <!-- plugins versions -->
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+    <maven-assembly-plugin.version>3.1.1</maven-assembly-plugin.version>
 
     <!-- dependencies versions -->
     <telegrambots.version>4.4.0.1</telegrambots.version>
@@ -47,6 +48,33 @@
         <configuration>
           <release>${jdk.version}</release>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>${maven-assembly-plugin.version}</version>
+        <configuration>
+          <!-- get all project dependencies -->
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+          <!-- MainClass in manifest make a executable jar -->
+          <archive>
+            <manifest>
+              <mainClass>com.st4s1k.Main</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <!-- bind to the packaging phase -->
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
