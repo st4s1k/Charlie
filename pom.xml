@@ -10,15 +10,19 @@
   <packaging>jar</packaging>
 
   <properties>
+
     <heroku.appName>${project.artifactId}-${project.version}</heroku.appName>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
     <jdk.version>11</jdk.version>
-    <heroku.version>2.0.12</heroku.version>
+
+    <!-- plugins versions -->
+    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+
+    <!-- dependencies versions -->
     <telegrambots.version>4.4.0.1</telegrambots.version>
     <mxparser.version>4.3.3</mxparser.version>
-    <jsch.version>0.1.55</jsch.version>
-    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-    <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
+
   </properties>
 
   <dependencies>
@@ -42,35 +46,6 @@
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
           <release>${jdk.version}</release>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>${maven-dependency-plugin.version}</version>
-        <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <phase>package</phase>
-            <goals><goal>copy-dependencies</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.heroku.sdk</groupId>
-        <artifactId>heroku-maven-plugin</artifactId>
-        <version>${heroku.version}</version>
-        <configuration>
-          <appName>${heroku.appName}</appName>
-          <jdkVersion>${jdk.version}</jdkVersion>
-          <configVars>:
-            <JAVA_OPTS>-Dserver.port=$PORT -Dfile.encoding=UTF-8</JAVA_OPTS>
-            <CLASS_PATH>target/classes:target/dependency/*</CLASS_PATH>
-            <MAIN_CLASS>Main</MAIN_CLASS>
-          </configVars>
-          <processTypes>
-            <worker>java $JAVA_OPTS -cp $CLASS_PATH $MAIN_CLASS</worker>
-          </processTypes>
         </configuration>
       </plugin>
     </plugins>

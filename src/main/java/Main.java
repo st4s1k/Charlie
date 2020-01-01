@@ -3,7 +3,7 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 public class Main {
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     ApiContextInitializer.init();
     final var telegramBotsApi = new TelegramBotsApi();
     try {
