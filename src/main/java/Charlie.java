@@ -82,7 +82,7 @@ public class Charlie extends TelegramLongPollingBot {
 
       final Session session = sessions.get(chatId);
       final String receivedMessage = message.getText();
-      final String response = parse(session, receivedMessage);
+      final String response = parse(receivedMessage, session);
 
       if (!response.isEmpty()) {
         SendMessage sendMessage = new SendMessage()
@@ -98,8 +98,8 @@ public class Charlie extends TelegramLongPollingBot {
   }
 
   private String parse(
-      final Session session,
-      final String receivedMessage) {
+      final String receivedMessage,
+      final Session session) {
 
     final StringBuilder response = new StringBuilder();
 
@@ -112,7 +112,7 @@ public class Charlie extends TelegramLongPollingBot {
       expression.addFunctions(functions);
 
       if (expression.checkLexSyntax() == Expression.NO_SYNTAX_ERRORS) {
-        parseExpression(response, expression, session);
+        parseExpression(expression, session, response);
       } else {
         response.append(Optional.ofNullable(commands.get(receivedMessage))
             .map(c -> c.apply(session))
@@ -126,9 +126,9 @@ public class Charlie extends TelegramLongPollingBot {
   }
 
   private void parseExpression(
-      final StringBuilder response,
       final Expression expression,
-      final Session session) {
+      final Session session,
+      final StringBuilder response) {
 
     mXparser.enableUlpRounding();
 
@@ -149,12 +149,12 @@ public class Charlie extends TelegramLongPollingBot {
         function.addFunctions(sessionFunctions);
         session.addFunction(function);
         response.append("\n");
-        addFunction(response, function, session);
+        addFunction(function, session, response);
       } else if (argument.checkSyntax() == Argument.NO_SYNTAX_ERRORS) {
         argument.addArguments(sessionArguments);
         argument.addFunctions(sessionFunctions);
         response.append("\n");
-        addArgument(response, argument, session);
+        addArgument(argument, session, response);
       } else {
         response.append("\n").append(expression.getErrorMessage());
       }
@@ -162,9 +162,9 @@ public class Charlie extends TelegramLongPollingBot {
   }
 
   private void addFunction(
-      final StringBuilder response,
       final Function function,
-      final Session session) {
+      final Session session,
+      final StringBuilder response) {
     session.addFunction(function);
     response
         .append("Function saved:\n")
@@ -173,9 +173,9 @@ public class Charlie extends TelegramLongPollingBot {
   }
 
   private void addArgument(
-      final StringBuilder response,
       final Argument argument,
-      final Session session) {
+      final Session session,
+      final StringBuilder response) {
     session.addArgument(argument);
     response.append("Argument saved:\n")
         .append(argument.getArgumentName());
@@ -197,7 +197,8 @@ public class Charlie extends TelegramLongPollingBot {
   }
 
   private static String getStartMessage(final Session session) {
-    return "Hey, " + session.getUser().getFirstName() + "!\n"
+    final String user = session.getUser().getFirstName();
+    return "Hey, " + user + "!\n"
         + "I'm Charlie! "
         + "A telegram bot able to parse mathematical expressions.\n"
         + "My creator is @st4s1k.\n"
