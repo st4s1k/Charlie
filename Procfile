@@ -1,1 +1,1 @@
-worker: java $JAVA_OPTS -cp $CLASS_PATH $MAIN_CLASS
+worker: java $JAVA_OPTS -jar charlie-charles.jar
