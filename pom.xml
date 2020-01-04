@@ -22,7 +22,8 @@
 
     <!-- dependencies versions -->
     <telegrambots.version>4.4.0.1</telegrambots.version>
-    <mxparser.version>4.3.3</mxparser.version>
+    <jsch.version>0.1.55</jsch.version>
+    <lombok.version>1.18.10</lombok.version>
 
   </properties>
 
@@ -33,9 +34,15 @@
       <version>${telegrambots.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.mariuszgromada.math</groupId>
-      <artifactId>MathParser.org-mXparser</artifactId>
-      <version>${mxparser.version}</version>
+      <groupId>com.jcraft</groupId>
+      <artifactId>jsch</artifactId>
+      <version>${jsch.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>${lombok.version}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -61,7 +68,7 @@
           <!-- MainClass in manifest make a executable jar -->
           <archive>
             <manifest>
-              <mainClass>com.st4s1k.Main</mainClass>
+              <mainClass>com.st4s1k.charlie.Main</mainClass>
             </manifest>
           </archive>
         </configuration>

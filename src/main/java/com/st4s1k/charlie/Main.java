@@ -1,4 +1,4 @@
-package com.st4s1k;
+package com.st4s1k.charlie;
 
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
