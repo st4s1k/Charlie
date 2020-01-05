@@ -13,16 +13,16 @@ public class ConnectionInfo {
   private final JSch jsch;
 
   private Session session;
+
   private String hostname;
   private Integer port;
   private String username;
   private String password;
-
   private boolean awaitHostname;
+
   private boolean awaitPort;
   private boolean awaitUsername;
   private boolean awaitPassword;
-
   private boolean setupComplete;
 
   private SSHManager sshManager;
@@ -42,5 +42,16 @@ public class ConnectionInfo {
     this.awaitPassword = false;
 
     this.setupComplete = true;
+  }
+
+  public boolean allSet() {
+    return hostname != null
+        && username != null
+        && port != null
+        && password != null;
+  }
+
+  public void setUpSshManager() {
+    sshManager = new SSHManager(username, password, hostname, "", port);
   }
 }

@@ -2,7 +2,6 @@ package com.st4s1k.charlie.service;
 
 import com.st4s1k.charlie.data.model.ChatSession;
 import com.st4s1k.charlie.data.model.ConnectionInfo;
-import com.st4s1k.charlie.service.SSHManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -11,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -85,8 +85,9 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
           connectionInfo.setSetupComplete(true);
           break;
         default:
-          response.append(connectionInfo.getSshManager()
-              .sendCommand(receivedMessage));
+          response.append(Optional.ofNullable(connectionInfo.getSshManager())
+              .map(sshManager -> sshManager.sendCommand(receivedMessage))
+              .orElse("No connection ..."));
       }
     }
 
@@ -170,13 +171,9 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   private void finalizeSetup(
       final StringBuilder response,
       final ConnectionInfo connectionInfo) {
-    if (nonNull(connectionInfo.getPassword())) {
-      final var sshManager = new SSHManager(
-          connectionInfo.getUsername(),
-          connectionInfo.getPassword(),
-          connectionInfo.getHostname(), "",
-          connectionInfo.getPort()
-      );
+    if (connectionInfo.allSet()) {
+      connectionInfo.setUpSshManager();
+      final var sshManager = connectionInfo.getSshManager();
       final var connectErrorMessage = sshManager.connect();
       if (isNull(connectErrorMessage)) {
         connectionInfo.setSshManager(sshManager);
