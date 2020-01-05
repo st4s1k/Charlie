@@ -13,7 +13,8 @@
 
   <groupId>com.st4s1k</groupId>
   <artifactId>charlie</artifactId>
-  <version>charles</version>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>Charlie</name>
 
   <properties>
     <heroku.appName>${project.artifactId}-${project.version}</heroku.appName>
