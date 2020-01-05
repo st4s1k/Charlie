@@ -68,25 +68,32 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
     final var response = new StringBuilder();
     final var connectionInfo = chatSession.getConnectionInfo();
 
-    if (!connectionInfo.isSetupComplete()) {
+    if (connectionInfo.isSetupInProgress()) {
       completeSetup(receivedMessage, response, connectionInfo);
     } else {
+      final var sshManager = Optional.ofNullable(connectionInfo.getSshManager());
       switch (receivedMessage) {
         case "connect":
-          connectionInfo.setSetupComplete(false);
+          connectionInfo.setSetupInProgress(true);
           completeSetup(receivedMessage, response, connectionInfo);
           break;
         case "disconnect":
+          sshManager.ifPresent(SSHManager::close);
+          break;
+        case "reconnect":
+          sshManager.ifPresent(SSHManager::connect);
+          break;
+        case "reset":
           connectionInfo.setHostname(null);
           connectionInfo.setUsername(null);
           connectionInfo.setPort(null);
           connectionInfo.setPassword(null);
-          connectionInfo.getSshManager().close();
-          connectionInfo.setSetupComplete(true);
+          connectionInfo.setSshManager(null);
+          connectionInfo.setSetupInProgress(false);
           break;
         default:
-          response.append(Optional.ofNullable(connectionInfo.getSshManager())
-              .map(sshManager -> sshManager.sendCommand(receivedMessage))
+          response.append(sshManager
+              .map(ssh -> ssh.sendCommand(receivedMessage))
               .orElse("No connection ..."));
       }
     }
@@ -177,7 +184,7 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
       final var connectErrorMessage = sshManager.connect();
       if (isNull(connectErrorMessage)) {
         connectionInfo.setSshManager(sshManager);
-        connectionInfo.setSetupComplete(true);
+        connectionInfo.setSetupInProgress(false);
         response.append("[Setup complete]");
       } else {
         response.append(connectErrorMessage);

@@ -23,7 +23,7 @@ public class ConnectionInfo {
   private boolean awaitPort;
   private boolean awaitUsername;
   private boolean awaitPassword;
-  private boolean setupComplete;
+  private boolean setupInProgress;
 
   private SSHManager sshManager;
 
@@ -41,7 +41,7 @@ public class ConnectionInfo {
     this.awaitUsername = false;
     this.awaitPassword = false;
 
-    this.setupComplete = true;
+    this.setupInProgress = false;
   }
 
   public boolean allSet() {
