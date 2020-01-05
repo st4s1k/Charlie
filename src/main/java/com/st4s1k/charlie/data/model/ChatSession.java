@@ -1,11 +1,11 @@
-package com.st4s1k.charlie;
+package com.st4s1k.charlie.data.model;
 
 import lombok.Getter;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 @Getter
-class ChatSession {
+public class ChatSession {
 
   private final Chat chat;
   private final User user;

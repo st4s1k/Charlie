@@ -1,12 +1,13 @@
-package com.st4s1k.charlie;
+package com.st4s1k.charlie.data.model;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import com.st4s1k.charlie.service.SSHManager;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
-class ConnectionInfo {
+public class ConnectionInfo {
 
   @EqualsAndHashCode.Exclude
   private final JSch jsch;

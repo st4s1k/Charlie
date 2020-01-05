@@ -1,17 +1,19 @@
-package com.st4s1k.charlie;
+package com.st4s1k.charlie.service;
 
+import com.st4s1k.charlie.data.model.ChatSession;
+import com.st4s1k.charlie.data.model.ConnectionInfo;
+import com.st4s1k.charlie.service.SSHManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @RequiredArgsConstructor
 public class CharlieTelegramBot extends TelegramLongPollingBot {
@@ -31,34 +33,33 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
     return token;
   }
 
+  @Async
   @Override
   public void onUpdateReceived(final Update update) {
-    CompletableFuture.runAsync(() -> {
-      try {
-        if (update.hasMessage() && update.getMessage().hasText()) {
+    try {
+      if (update.hasMessage() && update.getMessage().hasText()) {
 
-          final var message = update.getMessage();
-          final var chat = message.getChat();
-          final var user = message.getFrom();
-          final var chatId = chat.getId();
+        final var message = update.getMessage();
+        final var chat = message.getChat();
+        final var user = message.getFrom();
+        final var chatId = chat.getId();
 
-          sessions.putIfAbsent(chatId, new ChatSession(chat, user));
+        sessions.putIfAbsent(chatId, new ChatSession(chat, user));
 
-          final var session = sessions.get(chatId);
-          final var receivedMessage = message.getText();
-          final var response = parse(session, receivedMessage);
+        final var session = sessions.get(chatId);
+        final var receivedMessage = message.getText();
+        final var response = parse(session, receivedMessage);
 
-          if (!response.isEmpty()) {
-            SendMessage sendMessage = new SendMessage()
-                .setChatId(chatId)
-                .setText(response);
-            execute(sendMessage);
-          }
+        if (!response.isEmpty()) {
+          SendMessage sendMessage = new SendMessage()
+              .setChatId(chatId)
+              .setText(response);
+          execute(sendMessage);
         }
-      } catch (Throwable e) {
-        e.printStackTrace();
       }
-    }).orTimeout(30, SECONDS);
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
   }
 
   private String parse(

@@ -4,7 +4,7 @@
  * @author cabbott
  * @version 1.0
  */
-package com.st4s1k.charlie;
+package com.st4s1k.charlie.service;
 
 import com.jcraft.jsch.*;
 
