@@ -117,7 +117,7 @@ public class SSHManager {
     StringBuilder outputBuffer = new StringBuilder();
 
     try {
-      Channel channel = sesConnection.openChannel("shell");
+      Channel channel = sesConnection.openChannel("exec");
       ((ChannelExec) channel).setCommand(command);
       InputStream commandOutput = channel.getInputStream();
       channel.connect();

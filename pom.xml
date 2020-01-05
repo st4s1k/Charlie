@@ -4,6 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.2.2.RELEASE</version>
+    <relativePath/> <!-- lookup parent from repository -->
+  </parent>
+
   <groupId>com.st4s1k</groupId>
   <artifactId>charlie</artifactId>
   <version>charles</version>
@@ -14,14 +21,14 @@
     <heroku.appName>${project.artifactId}-${project.version}</heroku.appName>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <jdk.version>11</jdk.version>
+    <java.version>11</java.version>
 
     <!-- plugins versions -->
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     <maven-assembly-plugin.version>3.1.1</maven-assembly-plugin.version>
 
     <!-- dependencies versions -->
-    <telegrambots.version>4.4.0.1</telegrambots.version>
+    <telegrambots.version>4.5</telegrambots.version>
     <jsch.version>0.1.55</jsch.version>
     <lombok.version>1.18.10</lombok.version>
 
@@ -29,8 +36,22 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.telegram</groupId>
-      <artifactId>telegrambots</artifactId>
+      <artifactId>telegrambots-spring-boot-starter</artifactId>
       <version>${telegrambots.version}</version>
     </dependency>
     <dependency>
@@ -41,7 +62,6 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>${lombok.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -49,11 +69,15 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
-          <release>${jdk.version}</release>
+          <release>${java.version}</release>
         </configuration>
       </plugin>
       <plugin>
@@ -68,7 +92,7 @@
           <!-- MainClass in manifest make a executable jar -->
           <archive>
             <manifest>
-              <mainClass>com.st4s1k.charlie.Main</mainClass>
+              <mainClass>com.st4s1k.charlie.CharlieApplication</mainClass>
             </manifest>
           </archive>
         </configuration>

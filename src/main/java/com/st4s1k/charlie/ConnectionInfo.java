@@ -42,11 +42,4 @@ class ConnectionInfo {
 
     this.setupComplete = true;
   }
-
-  public boolean isAnyAwaiting() {
-    return awaitHostname
-        || awaitUsername
-        || awaitPort
-        || awaitPassword;
-  }
 }
