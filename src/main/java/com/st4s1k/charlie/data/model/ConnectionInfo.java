@@ -11,21 +11,19 @@ public class ConnectionInfo {
 
   @EqualsAndHashCode.Exclude
   private final JSch jsch;
-
   private Session session;
+  private SSHManager sshManager;
 
   private String hostname;
   private Integer port;
   private String username;
   private String password;
-  private boolean awaitHostname;
 
+  private boolean awaitHostname;
   private boolean awaitPort;
   private boolean awaitUsername;
   private boolean awaitPassword;
   private boolean setupInProgress;
-
-  private SSHManager sshManager;
 
   public ConnectionInfo() {
     this.jsch = new JSch();

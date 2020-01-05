@@ -10,12 +10,9 @@ import com.jcraft.jsch.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class SSHManager {
-  private static final Logger LOGGER =
-      Logger.getLogger(SSHManager.class.getName());
+
   private JSch jschSSHChannel;
   private String strUserName;
   private String strConnectionIP;
@@ -33,8 +30,8 @@ public class SSHManager {
 
     try {
       jschSSHChannel.setKnownHosts(knownHostsFileName);
-    } catch (JSchException jschX) {
-      logError(jschX.getMessage());
+    } catch (JSchException e) {
+      e.printStackTrace();
     }
 
     strUserName = userName;
@@ -88,29 +85,11 @@ public class SSHManager {
       // UNCOMMENT THIS FOR TESTING PURPOSES, BUT DO NOT USE IN PRODUCTION
       sesConnection.setConfig("StrictHostKeyChecking", "no");
       sesConnection.connect(intTimeOut);
-    } catch (JSchException jschX) {
-      errorMessage = jschX.getMessage();
+    } catch (JSchException e) {
+      errorMessage = e.getMessage();
     }
 
     return errorMessage;
-  }
-
-  private String logError(String errorMessage) {
-    if (errorMessage != null) {
-      LOGGER.log(Level.SEVERE, "{0}:{1} - {2}",
-          new Object[]{strConnectionIP, intConnectionPort, errorMessage});
-    }
-
-    return errorMessage;
-  }
-
-  private String logWarning(String warnMessage) {
-    if (warnMessage != null) {
-      LOGGER.log(Level.WARNING, "{0}:{1} - {2}",
-          new Object[]{strConnectionIP, intConnectionPort, warnMessage});
-    }
-
-    return warnMessage;
   }
 
   public String sendCommand(String command) {
@@ -130,7 +109,6 @@ public class SSHManager {
 
       channel.disconnect();
     } catch (IOException | JSchException x) {
-      logWarning(x.getMessage());
       return null;
     }
 
