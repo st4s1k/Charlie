@@ -77,8 +77,7 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
       final String[] splitMsg = receivedMessage.split(" ");
       if (splitMsg.length == 3) {
         final String hostInfo = splitMsg[1];
-        final String username = hostInfo.substring(9,
-            hostInfo.indexOf('@'));
+        final String username = hostInfo.substring(0, hostInfo.indexOf('@'));
         final String hostname = hostInfo.substring(
             hostInfo.indexOf('@') + 1,
             hostInfo.indexOf(':'));
