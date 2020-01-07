@@ -19,12 +19,6 @@ public class ConnectionInfo {
   private String username;
   private String password;
 
-  private boolean awaitHostname;
-  private boolean awaitPort;
-  private boolean awaitUsername;
-  private boolean awaitPassword;
-  private boolean setupInProgress;
-
   public ConnectionInfo() {
     this.jsch = new JSch();
 
@@ -33,13 +27,6 @@ public class ConnectionInfo {
     this.port = null;
     this.username = null;
     this.password = null;
-
-    this.awaitHostname = false;
-    this.awaitPort = false;
-    this.awaitUsername = false;
-    this.awaitPassword = false;
-
-    this.setupInProgress = false;
   }
 
   public boolean allSet() {
@@ -50,6 +37,10 @@ public class ConnectionInfo {
   }
 
   public void setUpSshManager() {
-    sshManager = new SSHManager(username, password, hostname, "", port);
+    sshManager = new SSHManager(
+        username,
+        password,
+        hostname, "",
+        port);
   }
 }

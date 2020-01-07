@@ -3,7 +3,6 @@ package com.st4s1k.charlie.service;
 import com.st4s1k.charlie.data.model.ChatSession;
 import com.st4s1k.charlie.data.model.ConnectionInfo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Async;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -11,9 +10,10 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @RequiredArgsConstructor
 public class CharlieTelegramBot extends TelegramLongPollingBot {
@@ -33,7 +33,6 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
     return token;
   }
 
-  @Async
   @Override
   public void onUpdateReceived(final Update update) {
     try {
@@ -48,7 +47,13 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
 
         final var session = sessions.get(chatId);
         final var receivedMessage = message.getText();
-        final var response = parse(session, receivedMessage);
+        final var responseBuilder = new StringBuilder();
+
+        CompletableFuture.runAsync(() ->
+            parse(responseBuilder, session, receivedMessage))
+            .orTimeout(5, SECONDS);
+
+        final String response = responseBuilder.toString();
 
         if (!response.isEmpty()) {
           SendMessage sendMessage = new SendMessage()
@@ -62,34 +67,45 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
     }
   }
 
-  private String parse(
+  private void parse(
+      final StringBuilder response,
       final ChatSession chatSession,
       final String receivedMessage) {
-    final var response = new StringBuilder();
     final var connectionInfo = chatSession.getConnectionInfo();
 
-    if (connectionInfo.isSetupInProgress()) {
-      completeSetup(receivedMessage, response, connectionInfo);
+    if (receivedMessage.startsWith("/connect ")) {
+      final String[] splitMsg = receivedMessage.split(" ");
+      if (splitMsg.length == 3) {
+        final String hostInfo = splitMsg[1];
+        final String username = hostInfo.substring(9,
+            hostInfo.indexOf('@'));
+        final String hostname = hostInfo.substring(
+            hostInfo.indexOf('@') + 1,
+            hostInfo.indexOf(':'));
+        final Integer port = Integer.valueOf(
+            hostInfo.substring(receivedMessage.indexOf(':') + 1));
+        final String password = splitMsg[2];
+        connectionInfo.setUsername(username);
+        connectionInfo.setHostname(hostname);
+        connectionInfo.setPort(port);
+        connectionInfo.setPassword(password);
+        setupConnection(response, connectionInfo);
+      }
     } else {
       final var sshManager = Optional.ofNullable(connectionInfo.getSshManager());
       switch (receivedMessage) {
-        case "connect":
-          connectionInfo.setSetupInProgress(true);
-          completeSetup(receivedMessage, response, connectionInfo);
-          break;
-        case "disconnect":
+        case "/disconnect":
           sshManager.ifPresent(SSHManager::close);
           break;
-        case "reconnect":
+        case "/reconnect":
           sshManager.ifPresent(SSHManager::connect);
           break;
-        case "reset":
+        case "/reset":
           connectionInfo.setHostname(null);
           connectionInfo.setUsername(null);
           connectionInfo.setPort(null);
           connectionInfo.setPassword(null);
           connectionInfo.setSshManager(null);
-          connectionInfo.setSetupInProgress(false);
           break;
         default:
           response.append(sshManager
@@ -97,85 +113,9 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
               .orElse("No connection ..."));
       }
     }
-
-    return response.toString();
   }
 
-  private void completeSetup(
-      final String receivedMessage,
-      final StringBuilder response,
-      final ConnectionInfo connectionInfo) {
-    setHostname(receivedMessage, response, connectionInfo);
-    setUsername(receivedMessage, response, connectionInfo);
-    setPort(receivedMessage, response, connectionInfo);
-    setPassword(receivedMessage, response, connectionInfo);
-    finalizeSetup(response, connectionInfo);
-  }
-
-  private void setHostname(
-      final String receivedMessage,
-      final StringBuilder response,
-      final ConnectionInfo connectionInfo) {
-    if (isNull(connectionInfo.getHostname())) {
-      if (!connectionInfo.isAwaitHostname()) {
-        response.append("[Please provide hostname]");
-        connectionInfo.setAwaitHostname(true);
-      } else {
-        connectionInfo.setHostname(receivedMessage);
-        connectionInfo.setAwaitHostname(false);
-      }
-    }
-  }
-
-  private void setUsername(
-      final String receivedMessage,
-      final StringBuilder response,
-      final ConnectionInfo connectionInfo) {
-    if (isNull(connectionInfo.getUsername()) &&
-        nonNull(connectionInfo.getHostname())) {
-      if (!connectionInfo.isAwaitUsername()) {
-        response.append("[Please provide username]");
-        connectionInfo.setAwaitUsername(true);
-      } else {
-        connectionInfo.setUsername(receivedMessage);
-        connectionInfo.setAwaitUsername(false);
-      }
-    }
-  }
-
-  private void setPort(
-      final String receivedMessage,
-      final StringBuilder response,
-      final ConnectionInfo connectionInfo) {
-    if (isNull(connectionInfo.getPort()) &&
-        nonNull(connectionInfo.getUsername())) {
-      if (!connectionInfo.isAwaitPort()) {
-        response.append("[Please provide port]");
-        connectionInfo.setAwaitPort(true);
-      } else {
-        connectionInfo.setPort(Integer.valueOf(receivedMessage));
-        connectionInfo.setAwaitPort(false);
-      }
-    }
-  }
-
-  private void setPassword(
-      final String receivedMessage,
-      final StringBuilder response,
-      final ConnectionInfo connectionInfo) {
-    if (isNull(connectionInfo.getPassword()) &&
-        nonNull(connectionInfo.getPort())) {
-      if (!connectionInfo.isAwaitPassword()) {
-        response.append("[Please provide password]");
-        connectionInfo.setAwaitPassword(true);
-      } else {
-        connectionInfo.setPassword(receivedMessage);
-        connectionInfo.setAwaitPassword(false);
-      }
-    }
-  }
-
-  private void finalizeSetup(
+  private void setupConnection(
       final StringBuilder response,
       final ConnectionInfo connectionInfo) {
     if (connectionInfo.allSet()) {
@@ -184,7 +124,6 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
       final var connectErrorMessage = sshManager.connect();
       if (isNull(connectErrorMessage)) {
         connectionInfo.setSshManager(sshManager);
-        connectionInfo.setSetupInProgress(false);
         response.append("[Setup complete]");
       } else {
         response.append(connectErrorMessage);
