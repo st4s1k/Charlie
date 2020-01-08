@@ -123,11 +123,15 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         sessionFactory.setUsername(username);
         sessionFactory.setHostname(hostname);
         sessionFactory.setPort(port);
+
         try {
-          Runtime.getRuntime().exec(
-              "ssh-keyscan -t rsa "
-                  + hostname +
-                  " >> ~/.ssh/known_hosts");
+          final var process = Runtime.getRuntime()
+              .exec("ssh-keygen -F " + hostname);
+          if (process.exitValue() == 1) {
+            Runtime.getRuntime()
+                .exec("ssh-keyscan -t rsa " + hostname
+                    + " >> ~/.ssh/known_hosts");
+          }
           sessionFactory.setKnownHosts("~/.ssh/known_hosts");
           sessionFactory.setIdentityFromPrivateKey("~/.ssh/id_rsa");
         } catch (JSchException | IOException e) {
