@@ -10,6 +10,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -125,15 +126,21 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         sessionFactory.setPort(port);
 
         try {
-          if (Runtime.getRuntime()
-              .exec("ssh-keygen -F " + username + "@" + hostname)
+          final var runtime = Runtime.getRuntime();
+          if (runtime.exec("ssh-keygen -F "
+              + username + "@" + hostname)
               .exitValue() == 1) {
-            Runtime.getRuntime()
-                .exec("ssh-keyscan -t rsa " + username + "@" + hostname
-                    + " >> ~/.ssh/known_hosts");
+            runtime.exec("ssh-keyscan -t rsa " + username + "@" + hostname
+                + " >> ~/.ssh/known_hosts");
           }
-          sessionFactory.setKnownHosts("~/.ssh/known_hosts");
-          sessionFactory.setIdentityFromPrivateKey("~/.ssh/id_rsa");
+          final var knownHostsPath = "~/.ssh/known_hosts";
+          final var privateKeyPath = "~/.ssh/id_rsa";
+          final var idRsaFile = new File(privateKeyPath);
+          if (!idRsaFile.exists()) {
+            runtime.exec("ssh-keygen -t rsa");
+          }
+          sessionFactory.setKnownHosts(knownHostsPath);
+          sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
         } catch (JSchException | IOException e) {
           e.printStackTrace();
         }
