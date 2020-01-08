@@ -1,5 +1,6 @@
 package com.st4s1k.charlie.service;
 
+import com.jcraft.jsch.JSchException;
 import com.st4s1k.charlie.data.model.ChatSession;
 import com.st4s1k.charlie.data.model.ChatSession.ChatSessionId;
 import lombok.SneakyThrows;
@@ -124,6 +125,12 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         sessionFactory.setHostname(hostname);
         sessionFactory.setPort(port);
         sessionFactory.setPassword(password);
+        try {
+          sessionFactory.setKnownHosts("~/.ssh/known_hosts");
+          sessionFactory.setIdentityFromPrivateKey("~/.ssh/id_rsa");
+        } catch (JSchException e) {
+          e.printStackTrace();
+        }
         chatSession.addResponse("[User info is set]");
       }
     }

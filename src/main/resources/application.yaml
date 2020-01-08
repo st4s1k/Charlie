@@ -1,0 +1,5 @@
+server:
+  port: ${PORT:8080}
+charlie:
+  token: '767946678:AAGhduP0bRqNpubiS8h77qUXp7DzGdgB3p0'
+  username: 'charlie12bot'
