@@ -10,6 +10,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -123,9 +124,13 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         sessionFactory.setHostname(hostname);
         sessionFactory.setPort(port);
         try {
+          Runtime.getRuntime().exec(
+              "ssh-keyscan -t rsa "
+                  + hostname +
+                  " >> ~/.ssh/known_hosts");
           sessionFactory.setKnownHosts("~/.ssh/known_hosts");
           sessionFactory.setIdentityFromPrivateKey("~/.ssh/id_rsa");
-        } catch (JSchException e) {
+        } catch (JSchException | IOException e) {
           e.printStackTrace();
         }
         chatSession.addResponse("[User info is set]");
