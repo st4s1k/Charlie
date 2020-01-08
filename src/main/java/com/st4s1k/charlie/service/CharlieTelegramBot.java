@@ -125,16 +125,12 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         sessionFactory.setPort(port);
 
         try {
-          final var p1 = Runtime.getRuntime()
-              .exec("ssh-keygen -F " + hostname);
-          System.out.println(p1.getOutputStream());
-          System.out.println(p1.getErrorStream());
-          if (p1.exitValue() == 1) {
-            final var p2 = Runtime.getRuntime()
-                .exec("ssh-keyscan -t rsa " + hostname
+          if (Runtime.getRuntime()
+              .exec("ssh-keygen -F " + username + "@" + hostname)
+              .exitValue() == 1) {
+            Runtime.getRuntime()
+                .exec("ssh-keyscan -t rsa " + username + "@" + hostname
                     + " >> ~/.ssh/known_hosts");
-            System.out.println(p2.getOutputStream());
-            System.out.println(p2.getErrorStream());
           }
           sessionFactory.setKnownHosts("~/.ssh/known_hosts");
           sessionFactory.setIdentityFromPrivateKey("~/.ssh/id_rsa");
