@@ -98,7 +98,6 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
       sessionFactory.setUsername(null);
       sessionFactory.setHostname(null);
       sessionFactory.setPort(0);
-      sessionFactory.setPassword(null);
       sessionFactory.setUserInfo(null);
       chatSession.getCommandRunner().close();
       chatSession.addResponse("[User info cleared]");
@@ -111,9 +110,8 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
       final ChatSession chatSession) {
     final var receivedMessage = chatSession.getLastReceivedMessage();
     final var splitMsg = receivedMessage.split(" ");
-    if (splitMsg.length == 3) {
+    if (splitMsg.length == 2) {
       final var hostInfo = splitMsg[1];
-      final var password = splitMsg[2];
       if (hostInfo.matches(".+@.+:.+")) {
         final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
         final var hostname = hostInfo.substring(
@@ -124,7 +122,6 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         sessionFactory.setUsername(username);
         sessionFactory.setHostname(hostname);
         sessionFactory.setPort(port);
-        sessionFactory.setPassword(password);
         try {
           sessionFactory.setKnownHosts("~/.ssh/known_hosts");
           sessionFactory.setIdentityFromPrivateKey("~/.ssh/id_rsa");
