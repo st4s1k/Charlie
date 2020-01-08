@@ -1,6 +1,5 @@
 package com.st4s1k.charlie.service;
 
-import com.jcraft.jsch.JSchException;
 import com.st4s1k.charlie.data.model.ChatSession;
 import com.st4s1k.charlie.data.model.ChatSession.ChatSessionId;
 import lombok.SneakyThrows;
@@ -10,8 +9,6 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -116,34 +113,23 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
       final var hostInfo = splitMsg[1];
       if (hostInfo.matches(".+@.+:.+")) {
         final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
-        final var hostname = hostInfo.substring(
-            hostInfo.indexOf('@') + 1,
-            hostInfo.indexOf(':'));
+        final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
         final var port = Integer.parseInt(hostInfo.substring(hostInfo.indexOf(':') + 1));
         final var sessionFactory = chatSession.getSessionFactory();
         sessionFactory.setUsername(username);
         sessionFactory.setHostname(hostname);
         sessionFactory.setPort(port);
+        sessionFactory.setConfig("StrictHostKeyChecking", "no");
 
-        try {
-          final var runtime = Runtime.getRuntime();
-          if (runtime.exec("ssh-keygen -F "
-              + username + "@" + hostname)
-              .exitValue() == 1) {
-            runtime.exec("ssh-keyscan -t rsa " + username + "@" + hostname
-                + " >> ~/.ssh/known_hosts");
-          }
-          final var knownHostsPath = "~/.ssh/known_hosts";
-          final var privateKeyPath = "~/.ssh/id_rsa";
-          final var idRsaFile = new File(privateKeyPath);
-          if (!idRsaFile.exists()) {
-            runtime.exec("ssh-keygen -t rsa");
-          }
-          sessionFactory.setKnownHosts(knownHostsPath);
-          sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
-        } catch (JSchException | IOException e) {
-          e.printStackTrace();
-        }
+//        try {
+//          final var knownHostsPath = "~/.ssh/known_hosts";
+//          final var privateKeyPath = "~/.ssh/id_rsa";
+//          sessionFactory.setKnownHosts(knownHostsPath);
+//          sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
+//        } catch (JSchException e) {
+//          e.printStackTrace();
+//        }
+
         chatSession.addResponse("[User info is set]");
       }
     }
