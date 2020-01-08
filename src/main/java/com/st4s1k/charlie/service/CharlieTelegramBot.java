@@ -1,27 +1,28 @@
 package com.st4s1k.charlie.service;
 
 import com.st4s1k.charlie.data.model.ChatSession;
-import com.st4s1k.charlie.data.model.ConnectionInfo;
-import lombok.RequiredArgsConstructor;
+import com.st4s1k.charlie.data.model.ChatSession.ChatSessionId;
+import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static java.util.Objects.isNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-@RequiredArgsConstructor
+@Component
 public class CharlieTelegramBot extends TelegramLongPollingBot {
 
-  private final String token;
-  private final String botUserName;
+  @Value("${charlie.token}")
+  private String token;
 
-  private Map<Long, ChatSession> sessions = new HashMap<>();
+  @Value("${charlie.username}")
+  private String botUserName;
+
+  private Map<ChatSessionId, ChatSession> sessions = new HashMap<>();
 
   @Override
   public String getBotUsername() {
@@ -41,91 +42,89 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         final var message = update.getMessage();
         final var chat = message.getChat();
         final var user = message.getFrom();
-        final var chatId = chat.getId();
+        final var chatSessionId = new ChatSessionId(chat, user);
 
-        sessions.putIfAbsent(chatId, new ChatSession(chat, user));
-
-        final var session = sessions.get(chatId);
-        final var receivedMessage = message.getText();
-        final var responseBuilder = new StringBuilder();
-
-        CompletableFuture.runAsync(() ->
-            parse(responseBuilder, session, receivedMessage))
-            .orTimeout(5, SECONDS);
-
-        final String response = responseBuilder.toString();
-
-        if (!response.isEmpty()) {
-          SendMessage sendMessage = new SendMessage()
-              .setChatId(chatId)
-              .setText(response);
-          execute(sendMessage);
+        if (!sessions.containsKey(chatSessionId)) {
+          final var chatSession = new ChatSession(chatSessionId);
+          sessions.put(chatSessionId, chatSession);
         }
+
+        final var chatSession = sessions.get(chatSessionId);
+        final var receivedMessage = message.getText();
+        chatSession.setLastReceivedMessage(receivedMessage);
+
+        CompletableFuture
+            .runAsync(() -> parse(chatSession))
+            .thenRun(() -> sendResponse(chatSession));
       }
     } catch (Throwable e) {
       e.printStackTrace();
     }
   }
 
-  private void parse(
-      final StringBuilder response,
-      final ChatSession chatSession,
-      final String receivedMessage) {
-    final var connectionInfo = chatSession.getConnectionInfo();
-
-    if (receivedMessage.startsWith("/connect ")) {
-      final String[] splitMsg = receivedMessage.split(" ");
-      if (splitMsg.length == 3) {
-        final String hostInfo = splitMsg[1];
-        final String username = hostInfo.substring(0, hostInfo.indexOf('@'));
-        final String hostname = hostInfo.substring(
-            hostInfo.indexOf('@') + 1,
-            hostInfo.indexOf(':'));
-        final Integer port = Integer.valueOf(
-            hostInfo.substring(receivedMessage.indexOf(':') + 1));
-        final String password = splitMsg[2];
-        connectionInfo.setUsername(username);
-        connectionInfo.setHostname(hostname);
-        connectionInfo.setPort(port);
-        connectionInfo.setPassword(password);
-        setupConnection(response, connectionInfo);
-      }
-    } else {
-      final var sshManager = Optional.ofNullable(connectionInfo.getSshManager());
-      switch (receivedMessage) {
-        case "/disconnect":
-          sshManager.ifPresent(SSHManager::close);
-          break;
-        case "/reconnect":
-          sshManager.ifPresent(SSHManager::connect);
-          break;
-        case "/reset":
-          connectionInfo.setHostname(null);
-          connectionInfo.setUsername(null);
-          connectionInfo.setPort(null);
-          connectionInfo.setPassword(null);
-          connectionInfo.setSshManager(null);
-          break;
-        default:
-          response.append(sshManager
-              .map(ssh -> ssh.sendCommand(receivedMessage))
-              .orElse("No connection ..."));
-      }
+  @SneakyThrows
+  private void sendResponse(
+      final ChatSession chatSession) {
+    final var response = chatSession.getResponse();
+    final var chatId = chatSession.getChat().getId();
+    if (!response.isEmpty()) {
+      final SendMessage sendMessage = new SendMessage()
+          .setChatId(chatId)
+          .setText(response);
+      execute(sendMessage);
+      chatSession.clearResponseBuffer();
     }
   }
 
-  private void setupConnection(
-      final StringBuilder response,
-      final ConnectionInfo connectionInfo) {
-    if (connectionInfo.allSet()) {
-      connectionInfo.setUpSshManager();
-      final var sshManager = connectionInfo.getSshManager();
-      final var connectErrorMessage = sshManager.connect();
-      if (isNull(connectErrorMessage)) {
-        connectionInfo.setSshManager(sshManager);
-        response.append("[Setup complete]");
-      } else {
-        response.append(connectErrorMessage);
+  private void parse(
+      final ChatSession chatSession) {
+    final var receivedMessage = chatSession.getLastReceivedMessage();
+    if (receivedMessage.startsWith("/")) {
+      parseCommand(chatSession);
+    } else {
+      chatSession.execute(receivedMessage);
+    }
+  }
+
+  @SneakyThrows
+  private void parseCommand(
+      final ChatSession chatSession) {
+    final var receivedMessage = chatSession.getLastReceivedMessage();
+    if (receivedMessage.startsWith("/ui ")) {
+      parseConnectionInfo(chatSession);
+    } else if (receivedMessage.startsWith("/clrui")) {
+      final var sessionFactory = chatSession.getSessionFactory();
+      sessionFactory.setUsername(null);
+      sessionFactory.setHostname(null);
+      sessionFactory.setPort(0);
+      sessionFactory.setPassword(null);
+      sessionFactory.setUserInfo(null);
+      chatSession.getCommandRunner().close();
+      chatSession.addResponse("[User info cleared]");
+    } else {
+      chatSession.addResponse("Unknown command ...");
+    }
+  }
+
+  private void parseConnectionInfo(
+      final ChatSession chatSession) {
+    final var receivedMessage = chatSession.getLastReceivedMessage();
+    final var splitMsg = receivedMessage.split(" ");
+    if (splitMsg.length == 3) {
+      final var hostInfo = splitMsg[1];
+      final var password = splitMsg[2];
+      if (hostInfo.matches(".+@.+:.+")) {
+        final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
+        final var hostname = hostInfo.substring(
+            hostInfo.indexOf('@') + 1,
+            hostInfo.indexOf(':'));
+        final var port = Integer.parseInt(hostInfo.substring(hostInfo.indexOf(':') + 1));
+        final var sessionFactory = chatSession.getSessionFactory();
+        sessionFactory.setUsername(username);
+        sessionFactory.setHostname(hostname);
+        sessionFactory.setPort(port);
+        sessionFactory.setPassword(password);
+        chatSession.addResponse("[User info is set]");
       }
     }
   }

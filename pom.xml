@@ -25,8 +25,8 @@
     <maven-assembly-plugin.version>3.1.1</maven-assembly-plugin.version>
     <!-- dependencies versions -->
     <telegrambots.version>4.5</telegrambots.version>
-    <jsch.version>0.1.55</jsch.version>
     <lombok.version>1.18.10</lombok.version>
+    <jsch.version>0.1.11</jsch.version>
   </properties>
 
   <dependencies>
@@ -50,8 +50,8 @@
       <version>${telegrambots.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.jcraft</groupId>
-      <artifactId>jsch</artifactId>
+      <groupId>com.pastdev</groupId>
+      <artifactId>jsch-extension</artifactId>
       <version>${jsch.version}</version>
     </dependency>
     <dependency>
