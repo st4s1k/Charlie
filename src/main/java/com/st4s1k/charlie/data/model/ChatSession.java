@@ -103,7 +103,7 @@ public class ChatSession {
 
     if (currentDir != null) {
       execute("cd " + dir + " && pwd");
-      currentDir = getResponse();
+      currentDir = getResponse().trim();
     } else {
       currentDir = dir;
     }
