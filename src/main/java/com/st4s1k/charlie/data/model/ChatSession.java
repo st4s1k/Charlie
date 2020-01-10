@@ -105,6 +105,9 @@ public class ChatSession {
       final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/'));
       final InputStream inputStream;
       try {
+        if (currentDir != null) {
+          sftp.cd(currentDir);
+        }
         inputStream = sftp.get(remoteFilePath);
         sendDocument(fileName, inputStream);
       } catch (SftpException e) {
