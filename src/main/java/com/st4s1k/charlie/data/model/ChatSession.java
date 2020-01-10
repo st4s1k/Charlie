@@ -88,14 +88,8 @@ public class ChatSession {
   }
 
   public void cd(final String dir) {
-
-    if (currentDir != null) {
-      executeCommand("cd " + dir + " && pwd");
-      currentDir = getResponse().trim();
-    } else {
-      currentDir = dir;
-    }
-
+    executeCommand("cd " + dir + " && pwd");
+    currentDir = getResponse().trim();
     executeCommand("ls");
   }
 
