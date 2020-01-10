@@ -94,6 +94,8 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
       parseConnectionInfo(chatSession);
     } else if (receivedMessage.startsWith("/cd ")) {
       chatSession.cd(receivedMessage.substring("/cd ".length()));
+    } else if (receivedMessage.equals("/pwd")) {
+      chatSession.pwd();
     } else if (receivedMessage.startsWith("/disconnect")) {
       chatSession.close();
     } else {

@@ -45,7 +45,8 @@ public class ChatSession {
   }
 
   @EqualsAndHashCode.Include
-  private ChatSessionId id;
+  private final ChatSessionId id;
+
   private DefaultSessionFactory sessionFactory = new DefaultSessionFactory();
   private CommandRunner commandRunner = new CommandRunner(sessionFactory);
   @Getter(NONE)
@@ -92,6 +93,10 @@ public class ChatSession {
 
   public void clearResponseBuffer() {
     responseBuffer.delete(0, responseBuffer.length());
+  }
+
+  public void pwd() {
+    addResponse(getCurrentDir());
   }
 
   public void cd(final String dir) {
