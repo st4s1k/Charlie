@@ -4,7 +4,6 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import com.pastdev.jsch.DefaultSessionFactory;
 import com.pastdev.jsch.command.CommandRunner;
-import com.pastdev.jsch.scp.ScpFile;
 import com.pastdev.jsch.sftp.SftpRunner;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -58,7 +57,6 @@ public class ChatSession {
   private DefaultSessionFactory sessionFactory = new DefaultSessionFactory();
   private CommandRunner commandRunner = new CommandRunner(sessionFactory);
   private SftpRunner sftpRunner = new SftpRunner(sessionFactory);
-  private ScpFile scpFile = new ScpFile(sessionFactory);
   @Getter(NONE)
   private StringBuilder responseBuffer = new StringBuilder();
   @Setter
@@ -217,7 +215,6 @@ public class ChatSession {
     sessionFactory = new DefaultSessionFactory();
     commandRunner = new CommandRunner(sessionFactory);
     sftpRunner = new SftpRunner(sessionFactory);
-    scpFile = new ScpFile(sessionFactory);
     currentDir = null;
     addResponse("[User info cleared]");
   }
