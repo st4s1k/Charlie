@@ -1,6 +1,7 @@
 package com.st4s1k.charlie.data.model;
 
 import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 import com.pastdev.jsch.DefaultSessionFactory;
 import com.pastdev.jsch.command.CommandRunner;
 import com.pastdev.jsch.scp.ScpFile;
@@ -98,12 +99,17 @@ public class ChatSession {
     executeCommand("ls");
   }
 
-  @SneakyThrows
-  public void downloadAndSendDocument(final String remoteFilePath) {
+  public void downloadAndSendDocument(final String remoteFilePath)
+      throws IOException, JSchException {
     sftpRunner.execute(sftp -> {
       final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/'));
-      final var inputStream = sftp.get(remoteFilePath);
-      sendDocument(fileName, inputStream);
+      final InputStream inputStream;
+      try {
+        inputStream = sftp.get(remoteFilePath);
+        sendDocument(fileName, inputStream);
+      } catch (SftpException e) {
+        e.printStackTrace();
+      }
     });
   }
 
