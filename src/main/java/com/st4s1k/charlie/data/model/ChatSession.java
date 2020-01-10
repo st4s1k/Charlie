@@ -48,6 +48,7 @@ public class ChatSession {
   private final ChatSessionId id;
 
   private DefaultSessionFactory sessionFactory = new DefaultSessionFactory();
+
   private CommandRunner commandRunner = new CommandRunner(sessionFactory);
   @Getter(NONE)
   private StringBuilder responseBuffer = new StringBuilder();
@@ -99,6 +100,9 @@ public class ChatSession {
     addResponse(getCurrentDir());
   }
 
+  public void download(final String filePath) {
+  }
+
   public void cd(final String dir) {
 
     if (currentDir != null) {
@@ -115,6 +119,7 @@ public class ChatSession {
   public void close() {
     sessionFactory = new DefaultSessionFactory();
     getCommandRunner().close();
+    commandRunner = new CommandRunner(sessionFactory);
     currentDir = null;
     addResponse("[User info cleared]");
   }
