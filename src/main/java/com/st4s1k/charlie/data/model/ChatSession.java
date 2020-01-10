@@ -45,11 +45,11 @@ public class ChatSession {
   }
 
   @EqualsAndHashCode.Include
-  private final ChatSessionId id;
-  private final DefaultSessionFactory sessionFactory = new DefaultSessionFactory();
-  private final CommandRunner commandRunner = new CommandRunner(sessionFactory);
+  private ChatSessionId id;
+  private DefaultSessionFactory sessionFactory = new DefaultSessionFactory();
+  private CommandRunner commandRunner = new CommandRunner(sessionFactory);
   @Getter(NONE)
-  private final StringBuilder responseBuffer = new StringBuilder();
+  private StringBuilder responseBuffer = new StringBuilder();
   @Setter
   private String lastReceivedMessage;
   private String currentDir;
@@ -108,10 +108,7 @@ public class ChatSession {
 
   @SneakyThrows
   public void close() {
-    sessionFactory.setUsername(null);
-    sessionFactory.setHostname(null);
-    sessionFactory.setPort(0);
-    sessionFactory.setUserInfo(null);
+    sessionFactory = new DefaultSessionFactory();
     getCommandRunner().close();
     currentDir = null;
     addResponse("[User info cleared]");
