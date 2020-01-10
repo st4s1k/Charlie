@@ -95,10 +95,12 @@ public class ChatSession {
   public void cd(final String dir) {
 
     if (currentDir != null) {
-      execute("cd " + dir);
+      execute("cd " + dir + " && pwd");
+      currentDir = getResponse();
+    } else {
+      currentDir = dir;
     }
 
-    this.currentDir = dir;
     execute("ls");
   }
 
