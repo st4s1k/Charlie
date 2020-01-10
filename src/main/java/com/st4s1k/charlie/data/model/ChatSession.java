@@ -93,6 +93,11 @@ public class ChatSession {
   }
 
   public void cd(final String dir) {
+
+    if (currentDir != null) {
+      execute("cd " + dir);
+    }
+
     this.currentDir = dir;
     execute("ls");
   }
