@@ -85,7 +85,9 @@ public class ChatSession {
   }
 
   public String getResponse() {
-    return responseBuffer.toString();
+    final var response = responseBuffer.toString();
+    clearResponseBuffer();
+    return response;
   }
 
   public void clearResponseBuffer() {
