@@ -92,14 +92,10 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
     final var receivedMessage = chatSession.getLastReceivedMessage();
     if (receivedMessage.startsWith("/ui ")) {
       parseConnectionInfo(chatSession);
-    } else if (receivedMessage.startsWith("/clrui")) {
-      final var sessionFactory = chatSession.getSessionFactory();
-      sessionFactory.setUsername(null);
-      sessionFactory.setHostname(null);
-      sessionFactory.setPort(0);
-      sessionFactory.setUserInfo(null);
-      chatSession.getCommandRunner().close();
-      chatSession.addResponse("[User info cleared]");
+    } else if (receivedMessage.startsWith("/cd ")) {
+      chatSession.cd(receivedMessage.substring("/cd ".length()));
+    } else if (receivedMessage.startsWith("/disconnect")) {
+      chatSession.close();
     } else {
       chatSession.addResponse("Unknown command ...");
     }
