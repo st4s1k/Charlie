@@ -99,16 +99,14 @@ public class ChatSession {
     executeCommand("ls");
   }
 
-  public void downloadAndSendDocument(final String remoteFilePath)
-      throws IOException, JSchException {
+  public void downloadAndSendDocument(final String remoteFilePath) throws IOException, JSchException {
     sftpRunner.execute(sftp -> {
-      final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/'));
-      final InputStream inputStream;
       try {
         if (currentDir != null) {
-          sftp.cd(currentDir);
+          sftp.cd(currentDir + "/");
         }
-        inputStream = sftp.get(remoteFilePath);
+        final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/') + 1);
+        final var inputStream = sftp.get(remoteFilePath);
         sendDocument(fileName, inputStream);
       } catch (SftpException e) {
         e.printStackTrace();
