@@ -6,7 +6,10 @@ import com.pastdev.jsch.DefaultSessionFactory;
 import com.pastdev.jsch.command.CommandRunner;
 import com.pastdev.jsch.scp.ScpFile;
 import com.pastdev.jsch.sftp.SftpRunner;
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -28,12 +31,11 @@ public class ChatSession {
   @RequiredArgsConstructor
   public static class ChatSessionId {
 
-
     private final Chat chat;
-
     private final User user;
 
     @Override
+    @SuppressWarnings("ObjectComparison")
     public boolean equals(final Object o) {
       if (this == o) return true;
       if (!(o instanceof ChatSessionId)) return false;
@@ -46,8 +48,6 @@ public class ChatSession {
     public int hashCode() {
       return Objects.hash(chat.getId(), user.getId());
     }
-
-
   }
 
   @EqualsAndHashCode.Include
@@ -93,19 +93,25 @@ public class ChatSession {
     executeCommand("ls");
   }
 
-  public void downloadAndSendDocument(final String remoteFilePath) throws IOException, JSchException {
-    sftpRunner.execute(sftp -> {
-      try {
-        if (currentDir != null) {
-          sftp.cd(currentDir + "/");
+  public void downloadAndSendDocument(final String remoteFilePath) {
+    try {
+      sftpRunner.execute(sftp -> {
+        try {
+          if (currentDir != null) {
+            sftp.cd(currentDir + "/");
+          }
+          final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/') + 1);
+          final var inputStream = sftp.get(remoteFilePath);
+          sendDocument(fileName, inputStream);
+        } catch (SftpException e) {
+          e.printStackTrace();
+          addResponse(e.getMessage());
         }
-        final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/') + 1);
-        final var inputStream = sftp.get(remoteFilePath);
-        sendDocument(fileName, inputStream);
-      } catch (SftpException e) {
-        e.printStackTrace();
-      }
-    });
+      });
+    } catch (JSchException | IOException e) {
+      e.printStackTrace();
+      addResponse(e.getMessage());
+    }
   }
 
   public void executeCommand(final String command) {
@@ -149,7 +155,6 @@ public class ChatSession {
     }
   }
 
-  @SneakyThrows
   private void parseCommand() {
     if (receivedMessage.startsWith("/ui ")) {
       parseConnectionInfo();
@@ -175,15 +180,18 @@ public class ChatSession {
     }
   }
 
-  @SneakyThrows
   public void sendMessage() {
     final var sendMessageRequest = new SendMessage()
         .setChatId(getChatId())
         .setText(getResponse());
-    sendMessage.accept(sendMessageRequest);
+    try {
+      sendMessage.accept(sendMessageRequest);
+    } catch (Exception e) {
+      e.printStackTrace();
+      addResponse(e.getMessage());
+    }
   }
 
-  @SneakyThrows
   public void sendDocument(
       final String documentName,
       final InputStream inputStream) {
@@ -191,12 +199,21 @@ public class ChatSession {
         .setChatId(getChatId())
         .setDocument(documentName, inputStream)
         .setCaption(documentName);
-    sendDocument.accept(sendDocumentRequest);
+    try {
+      sendDocument.accept(sendDocumentRequest);
+    } catch (Exception e) {
+      e.printStackTrace();
+      addResponse(e.getMessage());
+    }
   }
 
-  @SneakyThrows
   public void close() {
-    getCommandRunner().close();
+    try {
+      getCommandRunner().close();
+    } catch (IOException e) {
+      e.printStackTrace();
+      addResponse(e.getMessage());
+    }
     sessionFactory = new DefaultSessionFactory();
     commandRunner = new CommandRunner(sessionFactory);
     sftpRunner = new SftpRunner(sessionFactory);
