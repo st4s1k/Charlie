@@ -135,7 +135,7 @@ public class ChatSession {
     final var splitMsg = receivedMessage.split(" ");
     if (splitMsg.length == 3) {
       final var hostInfo = splitMsg[1];
-      final var password = splitMsg[2];
+//      final var password = splitMsg[2];
       if (hostInfo.matches(".+@.+:.+")) {
         final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
         final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
@@ -143,7 +143,7 @@ public class ChatSession {
         sessionFactory.setUsername(username);
         sessionFactory.setHostname(hostname);
         sessionFactory.setPort(port);
-        sessionFactory.setPassword(password);
+//        sessionFactory.setPassword(password);
 
         if (privateKeyPath.isBlank()) {
           sessionFactory.setConfig("StrictHostKeyChecking", "no");
