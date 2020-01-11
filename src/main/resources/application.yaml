@@ -3,7 +3,7 @@ server:
 charlie:
   token: '767946678:AAGhduP0bRqNpubiS8h77qUXp7DzGdgB3p0'
   username: 'charlie12bot'
-  privateKeyPath: '.ssh/known_host'
-  knownHostsPath: '.ssh/id_rsa'
+  privateKeyPath: 'src/main/resources/.ssh/known_host'
+  knownHostsPath: 'src/main/resources/.ssh/id_rsa'
   privateKey: ${SSH_KEY:null}
   knownHosts: ${SSH_HOSTS:null}
