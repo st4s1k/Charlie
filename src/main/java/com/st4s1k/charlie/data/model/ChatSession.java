@@ -131,41 +131,18 @@ public class ChatSession {
     }
   }
 
-  private void parseConnectionInfo() {
-    final var splitMsg = receivedMessage.split(" ");
-    if (splitMsg.length == 2) {
-      final var hostInfo = splitMsg[1];
-      if (hostInfo.matches(".+@.+:.+")) {
-        final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
-        final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
-        final var port = Integer.parseInt(hostInfo.substring(hostInfo.indexOf(':') + 1));
-//      final var password = splitMsg[2];
-        sessionFactory.setUsername(username);
-        sessionFactory.setHostname(hostname);
-        sessionFactory.setPort(port);
-//      sessionFactory.setPassword(password);
-
-        if (privateKeyPath.isBlank()) {
-          sessionFactory.setConfig("StrictHostKeyChecking", "no");
-        } else {
-          try {
-            sessionFactory.setKnownHosts(
-                new ByteArrayInputStream(this.knownHosts.getBytes())
-            );
-            sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
-          } catch (JSchException e) {
-            e.printStackTrace();
-          }
-        }
-
-        addResponse("[User info is set]");
-      }
+  public void parse() {
+    final var receivedMessage = getReceivedMessage();
+    if (receivedMessage.startsWith("/")) {
+      parseCommand();
+    } else {
+      executeCommand(receivedMessage);
     }
   }
 
   private void parseCommand() {
     if (receivedMessage.startsWith("/ui ")) {
-      parseConnectionInfo();
+      parseConnectionInfo(receivedMessage.substring("/ui ".length()));
     } else if (receivedMessage.startsWith("/cd ")) {
       cd(receivedMessage.substring("/cd ".length()));
     } else if (receivedMessage.equals("/pwd")) {
@@ -179,12 +156,33 @@ public class ChatSession {
     }
   }
 
-  public void parse() {
-    final var receivedMessage = getReceivedMessage();
-    if (receivedMessage.startsWith("/")) {
-      parseCommand();
+  private void parseConnectionInfo(final String hostInfo) {
+    if (hostInfo.matches(".+@.+:.+")) {
+      final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
+      final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
+      final var port = Integer.parseInt(hostInfo.substring(hostInfo.indexOf(':') + 1));
+//    final var password = splitMsg[2];
+      sessionFactory.setUsername(username);
+      sessionFactory.setHostname(hostname);
+      sessionFactory.setPort(port);
+//    sessionFactory.setPassword(password);
+
+      if (privateKeyPath.isBlank()) {
+        sessionFactory.setConfig("StrictHostKeyChecking", "no");
+      } else {
+        try {
+          sessionFactory.setKnownHosts(
+              new ByteArrayInputStream(this.knownHosts.getBytes())
+          );
+          sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
+        } catch (JSchException e) {
+          e.printStackTrace();
+        }
+      }
+
+      addResponse("[User info is set]");
     } else {
-      executeCommand(receivedMessage);
+      addResponse("[Invalid user info format]");
     }
   }
 
