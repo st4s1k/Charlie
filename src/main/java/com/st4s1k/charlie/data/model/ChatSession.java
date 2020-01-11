@@ -167,17 +167,15 @@ public class ChatSession {
       sessionFactory.setPort(port);
 //    sessionFactory.setPassword(password);
 
-      if (privateKeyPath.isBlank()) {
-        sessionFactory.setConfig("StrictHostKeyChecking", "no");
-      } else {
-        try {
-          sessionFactory.setKnownHosts(
-              new ByteArrayInputStream(this.knownHosts.getBytes())
-          );
-          sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
-        } catch (JSchException e) {
-          e.printStackTrace();
-        }
+      sessionFactory.setConfig("StrictHostKeyChecking", "no");
+
+      try {
+        sessionFactory.setKnownHosts(
+            new ByteArrayInputStream(this.knownHosts.getBytes())
+        );
+        sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
+      } catch (JSchException e) {
+        e.printStackTrace();
       }
 
       addResponse("[User info is set]");
