@@ -26,9 +26,6 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   @Value("${charlie.username}")
   private String username;
 
-  @Value("${charlie.knownHostsPath}")
-  private String knownHostsPath;
-
   @Value("${charlie.privateKeyPath}")
   private String privateKeyPath;
 
@@ -42,11 +39,8 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
 
   @PostConstruct
   private void setup() throws IOException {
-    final var knownHostsPath = Paths.get(this.knownHostsPath);
     final var privateKeyPath = Paths.get(this.privateKeyPath);
-    Files.deleteIfExists(knownHostsPath);
     Files.deleteIfExists(privateKeyPath);
-    Files.write(knownHostsPath, knownHosts.getBytes(), CREATE_NEW);
     Files.write(privateKeyPath, privateKey.getBytes(), CREATE_NEW);
   }
 
@@ -73,7 +67,7 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         if (!sessions.containsKey(chatSessionId)) {
           final var chatSession = new ChatSession(
               chatSessionId,
-              knownHostsPath,
+              knownHosts,
               privateKeyPath,
               this::execute,
               this::execute

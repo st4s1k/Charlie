@@ -15,6 +15,7 @@ import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import javax.annotation.PreDestroy;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
@@ -51,7 +52,7 @@ public class ChatSession {
 
   @EqualsAndHashCode.Include
   private final ChatSessionId id;
-  private final String knownHostsPath;
+  private final String knownHosts;
   private final String privateKeyPath;
   private final ThrowingConsumer<SendDocument> sendDocument;
   private final ThrowingConsumer<SendMessage> sendMessage;
@@ -148,7 +149,9 @@ public class ChatSession {
           sessionFactory.setConfig("StrictHostKeyChecking", "no");
         } else {
           try {
-            sessionFactory.setKnownHosts(knownHostsPath);
+            sessionFactory.setKnownHosts(
+                new ByteArrayInputStream(this.knownHosts.getBytes())
+            );
             sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
           } catch (JSchException e) {
             e.printStackTrace();
