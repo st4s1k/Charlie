@@ -73,6 +73,8 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         if (!sessions.containsKey(chatSessionId)) {
           final var chatSession = new ChatSession(
               chatSessionId,
+              knownHostsPath,
+              privateKeyPath,
               this::execute,
               this::execute
           );

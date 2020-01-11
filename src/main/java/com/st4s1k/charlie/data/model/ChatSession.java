@@ -51,6 +51,8 @@ public class ChatSession {
 
   @EqualsAndHashCode.Include
   private final ChatSessionId id;
+  private final String knownHostsPath;
+  private final String privateKeyPath;
   private final ThrowingConsumer<SendDocument> sendDocument;
   private final ThrowingConsumer<SendMessage> sendMessage;
 
@@ -141,9 +143,6 @@ public class ChatSession {
         sessionFactory.setHostname(hostname);
         sessionFactory.setPort(port);
         sessionFactory.setPassword(password);
-
-        final var knownHostsPath = "";
-        final var privateKeyPath = "";
 
         if (privateKeyPath.isBlank()) {
           sessionFactory.setConfig("StrictHostKeyChecking", "no");

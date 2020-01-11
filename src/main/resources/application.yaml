@@ -5,5 +5,5 @@ charlie:
   username: 'charlie12bot'
   privateKeyPath: 'src/main/resources/.ssh/known_hosts'
   knownHostsPath: 'src/main/resources/.ssh/id_rsa'
-  privateKey: ${SSH_KEY:null}
-  knownHosts: ${SSH_HOSTS:null}
+  privateKey: ${SSH_KEY:}
+  knownHosts: ${SSH_HOSTS:}
