@@ -14,11 +14,11 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
-import static java.util.Objects.isNull;
 import static lombok.AccessLevel.NONE;
 
 @Getter
@@ -54,14 +54,21 @@ public class ChatSession {
   private final ThrowingConsumer<SendDocument> sendDocument;
   private final ThrowingConsumer<SendMessage> sendMessage;
 
-  private DefaultSessionFactory sessionFactory = new DefaultSessionFactory();
-  private CommandRunner commandRunner = new CommandRunner(sessionFactory);
-  private SftpRunner sftpRunner = new SftpRunner(sessionFactory);
+  private DefaultSessionFactory sessionFactory;
+  private CommandRunner commandRunner;
+  private SftpRunner sftpRunner;
   @Getter(NONE)
-  private StringBuilder responseBuffer = new StringBuilder();
+  private StringBuilder responseBuffer;
   @Setter
   private String receivedMessage;
   private String currentDir;
+
+  {
+    sessionFactory = new DefaultSessionFactory();
+    commandRunner = new CommandRunner(sessionFactory);
+    sftpRunner = new SftpRunner(sessionFactory);
+    responseBuffer = new StringBuilder();
+  }
 
   public Long getChatId() {
     return id.getChat().getId();
@@ -95,9 +102,7 @@ public class ChatSession {
     try {
       sftpRunner.execute(sftp -> {
         try {
-          if (currentDir != null) {
-            sftp.cd(currentDir + "/");
-          }
+          sftp.cd(currentDir + "/");
           final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/') + 1);
           final var inputStream = sftp.get(remoteFilePath);
           sendDocument(fileName, inputStream);
@@ -115,8 +120,7 @@ public class ChatSession {
   public void executeCommand(final String command) {
     try {
       addResponse(commandRunner
-          .execute(isNull(currentDir) ? command
-              : "cd " + currentDir + " && " + command)
+          .execute("cd " + currentDir + " && " + command)
           .getStdout());
     } catch (JSchException | IOException e) {
       e.printStackTrace();
@@ -137,16 +141,20 @@ public class ChatSession {
         sessionFactory.setHostname(hostname);
         sessionFactory.setPort(port);
         sessionFactory.setPassword(password);
-        sessionFactory.setConfig("StrictHostKeyChecking", "no");
 
-//        try {
-//          final var knownHostsPath = "~/.ssh/known_hosts";
-//          final var privateKeyPath = "~/.ssh/id_rsa";
-//          sessionFactory.setKnownHosts(knownHostsPath);
-//          sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
-//        } catch (JSchException e) {
-//          e.printStackTrace();
-//        }
+        final var knownHostsPath = "";
+        final var privateKeyPath = "";
+
+        if (privateKeyPath.isBlank()) {
+          sessionFactory.setConfig("StrictHostKeyChecking", "no");
+        } else {
+          try {
+            sessionFactory.setKnownHosts(knownHostsPath);
+            sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
+          } catch (JSchException e) {
+            e.printStackTrace();
+          }
+        }
 
         addResponse("[User info is set]");
       }
@@ -205,6 +213,7 @@ public class ChatSession {
     }
   }
 
+  @PreDestroy
   public void close() {
     try {
       getCommandRunner().close();
@@ -215,7 +224,8 @@ public class ChatSession {
     sessionFactory = new DefaultSessionFactory();
     commandRunner = new CommandRunner(sessionFactory);
     sftpRunner = new SftpRunner(sessionFactory);
-    currentDir = null;
+    currentDir = "~";
+    receivedMessage = null;
     addResponse("[User info cleared]");
   }
 }

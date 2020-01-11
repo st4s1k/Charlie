@@ -3,3 +3,5 @@ server:
 charlie:
   token: '767946678:AAGhduP0bRqNpubiS8h77qUXp7DzGdgB3p0'
   username: 'charlie12bot'
+  privateKey: ${SSH_KEY}
+  knownHosts: ${SSH_HOSTS}

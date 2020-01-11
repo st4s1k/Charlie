@@ -18,13 +18,19 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   private String token;
 
   @Value("${charlie.username}")
-  private String botUserName;
+  private String username;
+
+  @Value("${charlie.privateKey}")
+  private String privateKey;
+
+  @Value("${charlie.knownHosts}")
+  private String knownHosts;
 
   private Map<ChatSessionId, ChatSession> sessions = new HashMap<>();
 
   @Override
   public String getBotUsername() {
-    return botUserName;
+    return username;
   }
 
   @Override
