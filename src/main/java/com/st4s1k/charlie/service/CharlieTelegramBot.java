@@ -7,9 +7,15 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 @Component
 public class CharlieTelegramBot extends TelegramLongPollingBot {
@@ -20,6 +26,12 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   @Value("${charlie.username}")
   private String username;
 
+  @Value("${charlie.knownHostsPath}")
+  private String knownHostsPath;
+
+  @Value("${charlie.privateKeyPath}")
+  private String privateKeyPath;
+
   @Value("${charlie.privateKey}")
   private String privateKey;
 
@@ -27,6 +39,16 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   private String knownHosts;
 
   private Map<ChatSessionId, ChatSession> sessions = new HashMap<>();
+
+  @PostConstruct
+  private void setup() throws IOException {
+    final var knownHostsPath = Paths.get(this.knownHostsPath);
+    final var privateKeyPath = Paths.get(this.privateKeyPath);
+    Files.deleteIfExists(knownHostsPath);
+    Files.deleteIfExists(privateKeyPath);
+    Files.write(knownHostsPath, knownHosts.getBytes(), CREATE_NEW);
+    Files.write(privateKeyPath, privateKey.getBytes(), CREATE_NEW);
+  }
 
   @Override
   public String getBotUsername() {
