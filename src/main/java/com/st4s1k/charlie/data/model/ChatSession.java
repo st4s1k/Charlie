@@ -15,7 +15,6 @@ import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import javax.annotation.PreDestroy;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
@@ -31,8 +30,13 @@ public class ChatSession {
   @RequiredArgsConstructor
   public static class ChatSessionId {
 
-    private final Chat chat;
-    private final User user;
+    private final Long chatId;
+    private final Integer userId;
+
+    public ChatSessionId(final Chat chat, final User user) {
+      this.chatId = chat.getId();
+      this.userId = user.getId();
+    }
 
     @Override
     @SuppressWarnings("ObjectComparison")
@@ -40,20 +44,18 @@ public class ChatSession {
       if (this == o) return true;
       if (!(o instanceof ChatSessionId)) return false;
       final ChatSessionId that = (ChatSessionId) o;
-      return Objects.equals(chat.getId(), that.chat.getId()) &&
-          Objects.equals(user.getId(), that.user.getId());
+      return Objects.equals(chatId, that.chatId) &&
+          Objects.equals(userId, that.userId);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(chat.getId(), user.getId());
+      return Objects.hash(chatId, userId);
     }
   }
 
   @EqualsAndHashCode.Include
   private final ChatSessionId id;
-  private final String knownHosts;
-  private final String privateKeyPath;
   private final ThrowingConsumer<SendDocument> sendDocument;
   private final ThrowingConsumer<SendMessage> sendMessage;
 
@@ -74,7 +76,7 @@ public class ChatSession {
   }
 
   public Long getChatId() {
-    return id.getChat().getId();
+    return id.getChatId();
   }
 
   public void addResponse(final String response) {
@@ -157,26 +159,32 @@ public class ChatSession {
   }
 
   private void parseConnectionInfo(final String hostInfo) {
-    if (hostInfo.matches(".+@.+:.+")) {
+    final var userNameRegex = "[A-Za-z0-9\\-.]+";
+    final var hostNameRegex = "[a-z_][a-z0-9_\\-]*[$]?";
+    final var portRegex = "^" +
+        "([0-9]{1,4}" +
+        "|[1-5][0-9]{4}" +
+        "|6[0-4][0-9]{3}" +
+        "|65[0-4][0-9]{2}" +
+        "|655[0-2][0-9]" +
+        "|6553[0-5])" +
+        "$";
+    final var passwordRegex = ".+";
+    final var hostInfoRegex = userNameRegex
+        + "@" + hostNameRegex
+        + ":" + portRegex
+        + "\\s+" + passwordRegex;
+    if (hostInfo.matches(hostInfoRegex)) {
       final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
       final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
       final var port = Integer.parseInt(hostInfo.substring(hostInfo.indexOf(':') + 1));
-//    final var password = splitMsg[2];
+      final var password = hostInfo.split("\\s+")[1];
       sessionFactory.setUsername(username);
       sessionFactory.setHostname(hostname);
       sessionFactory.setPort(port);
-//    sessionFactory.setPassword(password);
+      sessionFactory.setPassword(password);
 
       sessionFactory.setConfig("StrictHostKeyChecking", "no");
-
-      try {
-        sessionFactory.setKnownHosts(
-            new ByteArrayInputStream(this.knownHosts.getBytes())
-        );
-        sessionFactory.setIdentityFromPrivateKey(privateKeyPath);
-      } catch (JSchException e) {
-        e.printStackTrace();
-      }
 
       addResponse("[User info is set]");
     } else {
@@ -227,3 +235,4 @@ public class ChatSession {
     addResponse("[User info cleared]");
   }
 }
+

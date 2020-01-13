@@ -7,15 +7,9 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 @Component
 public class CharlieTelegramBot extends TelegramLongPollingBot {
@@ -26,23 +20,7 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   @Value("${charlie.username}")
   private String username;
 
-  @Value("${charlie.privateKeyPath}")
-  private String privateKeyPath;
-
-  @Value("${charlie.privateKey}")
-  private String privateKey;
-
-  @Value("${charlie.knownHosts}")
-  private String knownHosts;
-
-  private Map<ChatSessionId, ChatSession> sessions = new HashMap<>();
-
-  @PostConstruct
-  private void setup() throws IOException {
-    final var privateKeyPath = Paths.get(this.privateKeyPath);
-    Files.deleteIfExists(privateKeyPath);
-    Files.write(privateKeyPath, privateKey.getBytes(), CREATE_NEW);
-  }
+  private Map<ChatSession.ChatSessionId, ChatSession> sessions = new HashMap<>();
 
   @Override
   public String getBotUsername() {
@@ -64,16 +42,8 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         final var user = message.getFrom();
         final var chatSessionId = new ChatSessionId(chat, user);
 
-        if (!sessions.containsKey(chatSessionId)) {
-          final var chatSession = new ChatSession(
-              chatSessionId,
-              knownHosts,
-              privateKeyPath,
-              this::execute,
-              this::execute
-          );
-          sessions.put(chatSessionId, chatSession);
-        }
+        sessions.computeIfAbsent(chatSessionId, id ->
+            new ChatSession(id, this::execute, this::execute));
 
         final var chatSession = sessions.get(chatSessionId);
 

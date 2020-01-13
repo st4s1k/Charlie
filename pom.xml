@@ -27,6 +27,7 @@
     <telegrambots.version>4.5</telegrambots.version>
     <lombok.version>1.18.10</lombok.version>
     <jsch.version>0.1.11</jsch.version>
+    <javax.mail.version>1.6.2</javax.mail.version>
   </properties>
 
   <dependencies>
@@ -58,6 +59,11 @@
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>javax.mail</artifactId>
+      <version>${javax.mail.version}</version>
     </dependency>
   </dependencies>
 
