@@ -109,6 +109,8 @@ public class CharlieService {
       Files.write(filePath, idRsa.getBytes());
       chatSession.getSessionFactory()
           .setIdentityFromPrivateKey(file);
+
+      chatSession.addResponse("[Identity is set]");
     } catch (IOException | JSchException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
