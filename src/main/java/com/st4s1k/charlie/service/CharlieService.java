@@ -148,7 +148,7 @@ public class CharlieService {
     if (!fileDir.exists()) {
       fileDir.mkdirs();
     }
-    if (file.exists()) {
+    if (!file.exists()) {
       file.createNewFile();
     }
   }
