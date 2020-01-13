@@ -70,6 +70,8 @@ public class CharlieService {
       setIdentity(idRsa, chatSession);
     } else if (receivedMessage.matches("/ui\\s+.+")) {
       final var hostInfo = receivedMessage.replaceFirst("/ui\\s+", "");
+      System.out.println(hostInfo);
+      chatSession.addResponse(hostInfo);
       parseConnectionInfo(hostInfo, chatSession);
     } else if (receivedMessage.matches("/cd\\s+.+")) {
       final var dir = receivedMessage.replaceFirst("/cd\\s+", "");
@@ -105,24 +107,24 @@ public class CharlieService {
   public void parseConnectionInfo(
       final String hostInfo,
       final ChatSession chatSession) {
-    final var userNameRegex = "[A-Za-z0-9\\-.]+";
-    final var hostNameRegex = "^\\d+{1,3}\\.\\d+{1,3}\\.\\d+{1,3}\\.\\d+{1,3}$";
-    final var portRegex = "^" +
+    final var userNameRegex = "([A-Za-z0-9\\-.]+)";
+    final var hostNameRegex = "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})";
+    final var portRegex = "" +
         "([0-9]{1,4}" +
         "|[1-5][0-9]{4}" +
         "|6[0-4][0-9]{3}" +
         "|65[0-4][0-9]{2}" +
         "|655[0-2][0-9]" +
-        "|6553[0-5])$";
-    final var hostInfoRegex = userNameRegex + "@" + hostNameRegex + ":" + portRegex;
+        "|6553[0-5])";
+    final var hostInfoRegex = "^" + userNameRegex + "@" + hostNameRegex + ":" + portRegex + "$";
     if (hostInfo.matches(hostInfoRegex)) {
-      final var sessionFactory = chatSession.getSessionFactory();
       final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
       final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
-      final var port = Integer.parseInt(hostInfo.substring(hostInfo.indexOf(':') + 1));
+      final var port = hostInfo.substring(hostInfo.indexOf(':') + 1);
+      final var sessionFactory = chatSession.getSessionFactory();
       sessionFactory.setUsername(username);
       sessionFactory.setHostname(hostname);
-      sessionFactory.setPort(port);
+      sessionFactory.setPort(Integer.parseInt(port));
       sessionFactory.setConfig("StrictHostKeyChecking", "no");
       chatSession.addResponse("[User info is set]");
     } else {
