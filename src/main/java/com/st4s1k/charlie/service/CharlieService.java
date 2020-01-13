@@ -65,19 +65,19 @@ public class CharlieService {
   public void parseCommand(final ChatSession chatSession) {
     final var receivedMessage = chatSession.getReceivedMessage();
 
-    if (receivedMessage.matches("/rsa\\s+.+")) {
-      final var idRsa = receivedMessage.split("\\s+")[1];
+    if (receivedMessage.matches("^/rsa\\s+[\\s\\S]+")) {
+      final var idRsa = receivedMessage.replaceFirst("^/rsa\\s+", "");
       setIdentity(idRsa, chatSession);
-    } else if (receivedMessage.matches("/ui\\s+.+")) {
-      final var hostInfo = receivedMessage.split("\\s+")[1];
+    } else if (receivedMessage.matches("^/ui\\s+.+")) {
+      final var hostInfo = receivedMessage.replaceFirst("^/ui\\s+", "");
       parseConnectionInfo(hostInfo, chatSession);
-    } else if (receivedMessage.matches("/cd\\s+.+")) {
-      final var dir = receivedMessage.split("\\s+")[1];
+    } else if (receivedMessage.matches("^/cd\\s+.+")) {
+      final var dir = receivedMessage.replaceFirst("^/cd\\s+", "");
       cd(dir, chatSession);
     } else if (receivedMessage.equals("/pwd")) {
       pwd(chatSession);
-    } else if (receivedMessage.matches("/download\\s+.+")) {
-      final var remoteFilePath = receivedMessage.split("\\s+")[1];
+    } else if (receivedMessage.matches("^/download\\s+.+")) {
+      final var remoteFilePath = receivedMessage.replaceFirst("^/download\\s+", "");
       sendDocumentToChat(remoteFilePath, chatSession);
     } else if (receivedMessage.equals("/disconnect")) {
       close(chatSession);
