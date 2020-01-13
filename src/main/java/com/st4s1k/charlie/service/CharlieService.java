@@ -70,8 +70,6 @@ public class CharlieService {
       setIdentity(idRsa, chatSession);
     } else if (receivedMessage.matches("/ui\\s+.+")) {
       final var hostInfo = receivedMessage.replaceFirst("/ui\\s+", "");
-      System.out.println(hostInfo);
-      chatSession.addResponse(hostInfo);
       parseConnectionInfo(hostInfo, chatSession);
     } else if (receivedMessage.matches("/cd\\s+.+")) {
       final var dir = receivedMessage.replaceFirst("/cd\\s+", "");
