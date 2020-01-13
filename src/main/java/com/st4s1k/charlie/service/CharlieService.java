@@ -14,6 +14,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,9 @@ public class CharlieService {
 
   @Value("${jsch.dotSsh}")
   private String dotSsh;
+
+  @Value("${jsch.knownHosts.file}")
+  private String knownHostsFile;
 
   public void sendDocumentToChat(
       final String remoteFilePath,
@@ -97,24 +104,62 @@ public class CharlieService {
     try {
       final var userName = chatSession.getUserName();
       final var hostName = chatSession.getSessionFactory().getHostname();
-      final var file = dotSsh + "/id_rsa_" + userName + "_" + hostName;
-      final var filePath = Path.of(file);
+      final var identityFile = dotSsh + "/id_rsa_" + userName + "_" + hostName;
+
       if (!idRsa.matches("^[\\s\\S]+\\n$")) {
         idRsa += "\n";
       }
-      final var dotSshDir = new File(dotSsh);
-      if (!dotSshDir.exists()) {
-        dotSshDir.mkdirs();
-      }
-      Files.write(filePath, idRsa.getBytes());
+
+      createFile(identityFile, idRsa);
+
+      addToKnownHosts(hostName);
+
       chatSession.getSessionFactory()
-          .setIdentityFromPrivateKey(file);
+          .setIdentityFromPrivateKey(identityFile);
+
+      chatSession.getSessionFactory()
+          .setKnownHosts(knownHostsFile);
 
       chatSession.addResponse("[Identity is set]");
     } catch (IOException | JSchException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
     }
+  }
+
+  private void addToKnownHosts(final String hostName) throws IOException {
+
+    final var file = new File(knownHostsFile);
+
+    createFile(file);
+
+    final var content = Files.readString(Path.of(knownHostsFile));
+
+    if (Arrays.stream(content.split(",")).noneMatch(hostName::equals)) {
+      final var newContent = ((content.isBlank() ? "" : ",") + hostName).trim();
+      Files.write(Path.of(knownHostsFile), newContent.getBytes(), CREATE, APPEND);
+    }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private void createFile(final File file) throws IOException {
+    final var path = file.getPath();
+    final var fileDir = new File(path.substring(0, path.lastIndexOf('/')));
+    if (!fileDir.exists()) {
+      fileDir.mkdirs();
+    }
+    if (file.exists()) {
+      file.createNewFile();
+    }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private void createFile(final String file, final String content) throws IOException {
+    final var fileDir = new File(file.substring(0, file.lastIndexOf('/')));
+    if (!fileDir.exists()) {
+      fileDir.mkdirs();
+    }
+    Files.write(Path.of(file), content.getBytes());
   }
 
   public void parseConnectionInfo(
