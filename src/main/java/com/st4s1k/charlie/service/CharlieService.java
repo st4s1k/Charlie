@@ -87,13 +87,16 @@ public class CharlieService {
   }
 
   private void setIdentity(
-      final String idRsa,
+      String idRsa,
       final ChatSession chatSession) {
     try {
       final var userName = chatSession.getUserName();
       final var hostName = chatSession.getSessionFactory().getHostname();
-      final var file = "id_rsa_" + userName + hostName;
+      final var file = "id_rsa_" + userName + "_" + hostName;
       final var filePath = Path.of(file);
+      if (!idRsa.matches("^[\\s\\S]+\\n$")) {
+        idRsa += "\n";
+      }
       Files.write(filePath, idRsa.getBytes());
       chatSession.getSessionFactory().setIdentityFromPrivateKey(file);
     } catch (IOException | JSchException e) {
