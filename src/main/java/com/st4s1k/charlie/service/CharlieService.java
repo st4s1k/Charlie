@@ -109,8 +109,8 @@ public class CharlieService {
       final String hostInfo,
       final ChatSession chatSession) {
     final var userNameRegex = "([A-Za-z0-9\\-.]+)";
-    final var hostNameRegex = "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})" +
-        "|([a-z_][a-z0-9_\\-]*[$]?)";
+    final var hostNameRegex = "((\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})" +
+        "|([a-z_][a-z0-9_\\-]*[$]?))";
     final var portRegex = "" +
         "([0-9]{1,4}" +
         "|[1-5][0-9]{4}" +
@@ -135,11 +135,10 @@ public class CharlieService {
   }
 
   public void sendResponse(final ChatSession chatSession) {
-    final String response = chatSession.getResponse();
     if (chatSession.responseExists()) {
       final var sendMessageRequest = new SendMessage()
           .setChatId(chatSession.getChatId())
-          .setText(response);
+          .setText(chatSession.getResponse());
       try {
         chatSession.getCharlie().execute(sendMessageRequest);
       } catch (Exception e) {
