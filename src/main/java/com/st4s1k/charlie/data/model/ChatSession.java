@@ -78,5 +78,9 @@ public class ChatSession {
     currentDir = HOME;
     receivedMessage = null;
   }
+
+  public boolean responseExists() {
+    return responseBuffer.length() > 0;
+  }
 }
 

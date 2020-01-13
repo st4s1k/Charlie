@@ -134,14 +134,17 @@ public class CharlieService {
   }
 
   public void sendResponse(final ChatSession chatSession) {
-    final var sendMessageRequest = new SendMessage()
-        .setChatId(chatSession.getChatId())
-        .setText(chatSession.getResponse());
-    try {
-      chatSession.getCharlie().execute(sendMessageRequest);
-    } catch (Exception e) {
-      e.printStackTrace();
-      chatSession.addResponse(e.getMessage());
+    final String response = chatSession.getResponse();
+    if (chatSession.responseExists()) {
+      final var sendMessageRequest = new SendMessage()
+          .setChatId(chatSession.getChatId())
+          .setText(response);
+      try {
+        chatSession.getCharlie().execute(sendMessageRequest);
+      } catch (Exception e) {
+        e.printStackTrace();
+        chatSession.addResponse(e.getMessage());
+      }
     }
   }
 
