@@ -1,7 +1,8 @@
 package com.st4s1k.charlie.service;
 
 import com.st4s1k.charlie.data.model.ChatSession;
-import com.st4s1k.charlie.data.model.ChatSession.ChatSessionId;
+import com.st4s1k.charlie.data.model.ChatSessionId;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -12,7 +13,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Component
+@RequiredArgsConstructor
 public class CharlieTelegramBot extends TelegramLongPollingBot {
+
+  private final CharlieService charlieService;
 
   @Value("${charlie.token}")
   private String token;
@@ -20,7 +24,7 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   @Value("${charlie.username}")
   private String username;
 
-  private Map<ChatSession.ChatSessionId, ChatSession> sessions = new HashMap<>();
+  private Map<ChatSessionId, ChatSession> sessions = new HashMap<>();
 
   @Override
   public String getBotUsername() {
@@ -43,15 +47,15 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         final var chatSessionId = new ChatSessionId(chat, user);
 
         sessions.computeIfAbsent(chatSessionId, id ->
-            new ChatSession(id, this::execute, this::execute));
+            new ChatSession(id, this));
 
         final var chatSession = sessions.get(chatSessionId);
 
         chatSession.setReceivedMessage(message.getText());
 
         CompletableFuture
-            .runAsync(chatSession::parse)
-            .thenRun(chatSession::sendMessage);
+            .runAsync(() -> charlieService.parse(chatSession))
+            .thenRun(() -> charlieService.sendResponse(chatSession));
       }
     } catch (Throwable e) {
       e.printStackTrace();

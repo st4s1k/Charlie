@@ -1,78 +1,40 @@
 package com.st4s1k.charlie.data.model;
 
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
 import com.pastdev.jsch.DefaultSessionFactory;
 import com.pastdev.jsch.command.CommandRunner;
 import com.pastdev.jsch.sftp.SftpRunner;
+import com.st4s1k.charlie.service.CharlieTelegramBot;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Chat;
-import org.telegram.telegrambots.meta.api.objects.User;
-
-import javax.annotation.PreDestroy;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
 
 import static lombok.AccessLevel.NONE;
 
-@Getter
-@RequiredArgsConstructor
+@Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ChatSession {
 
-  @Getter
-  @RequiredArgsConstructor
-  public static class ChatSessionId {
-
-    private final Long chatId;
-    private final Integer userId;
-
-    public ChatSessionId(final Chat chat, final User user) {
-      this.chatId = chat.getId();
-      this.userId = user.getId();
-    }
-
-    @Override
-    @SuppressWarnings("ObjectComparison")
-    public boolean equals(final Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ChatSessionId)) return false;
-      final ChatSessionId that = (ChatSessionId) o;
-      return Objects.equals(chatId, that.chatId) &&
-          Objects.equals(userId, that.userId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(chatId, userId);
-    }
-  }
-
   @EqualsAndHashCode.Include
   private final ChatSessionId id;
-  private final ThrowingConsumer<SendDocument> sendDocument;
-  private final ThrowingConsumer<SendMessage> sendMessage;
+  private final CharlieTelegramBot charlie;
 
   private DefaultSessionFactory sessionFactory;
   private CommandRunner commandRunner;
   private SftpRunner sftpRunner;
   @Getter(NONE)
   private StringBuilder responseBuffer;
-  @Setter
   private String receivedMessage;
   private String currentDir;
 
-  {
-    sessionFactory = new DefaultSessionFactory();
-    commandRunner = new CommandRunner(sessionFactory);
-    sftpRunner = new SftpRunner(sessionFactory);
-    responseBuffer = new StringBuilder();
+  public ChatSession(
+      final ChatSessionId id,
+      final CharlieTelegramBot charlie) {
+    this.id = id;
+    this.charlie = charlie;
+    this.sessionFactory = new DefaultSessionFactory();
+    this.commandRunner = new CommandRunner(this.sessionFactory);
+    this.sftpRunner = new SftpRunner(this.sessionFactory);
+    this.responseBuffer = new StringBuilder();
   }
 
   public Long getChatId() {
@@ -91,148 +53,6 @@ public class ChatSession {
 
   public void clearResponseBuffer() {
     responseBuffer.delete(0, responseBuffer.length());
-  }
-
-  public void pwd() {
-    addResponse(getCurrentDir());
-  }
-
-  public void cd(final String dir) {
-    executeCommand("cd " + dir + " && pwd");
-    currentDir = getResponse().trim();
-    executeCommand("ls");
-  }
-
-  public void downloadAndSendDocument(final String remoteFilePath) {
-    try {
-      sftpRunner.execute(sftp -> {
-        try {
-          sftp.cd(currentDir + "/");
-          final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/') + 1);
-          final var inputStream = sftp.get(remoteFilePath);
-          sendDocument(fileName, inputStream);
-        } catch (SftpException e) {
-          e.printStackTrace();
-          addResponse(e.getMessage());
-        }
-      });
-    } catch (JSchException | IOException e) {
-      e.printStackTrace();
-      addResponse(e.getMessage());
-    }
-  }
-
-  public void executeCommand(final String command) {
-    try {
-      addResponse(commandRunner
-          .execute("cd " + currentDir + " && " + command)
-          .getStdout());
-    } catch (JSchException | IOException e) {
-      e.printStackTrace();
-      addResponse(e.getMessage());
-    }
-  }
-
-  public void parse() {
-    final var receivedMessage = getReceivedMessage();
-    if (receivedMessage.startsWith("/")) {
-      parseCommand();
-    } else {
-      executeCommand(receivedMessage);
-    }
-  }
-
-  private void parseCommand() {
-    if (receivedMessage.startsWith("/ui ")) {
-      parseConnectionInfo(receivedMessage.substring("/ui ".length()));
-    } else if (receivedMessage.startsWith("/cd ")) {
-      cd(receivedMessage.substring("/cd ".length()));
-    } else if (receivedMessage.equals("/pwd")) {
-      pwd();
-    } else if (receivedMessage.startsWith("/download ")) {
-      downloadAndSendDocument(receivedMessage.substring("/download ".length()));
-    } else if (receivedMessage.startsWith("/disconnect")) {
-      close();
-    } else {
-      addResponse("Unknown command ...");
-    }
-  }
-
-  private void parseConnectionInfo(final String hostInfo) {
-    final var userNameRegex = "[A-Za-z0-9\\-.]+";
-    final var hostNameRegex = "[a-z_][a-z0-9_\\-]*[$]?";
-    final var portRegex = "^" +
-        "([0-9]{1,4}" +
-        "|[1-5][0-9]{4}" +
-        "|6[0-4][0-9]{3}" +
-        "|65[0-4][0-9]{2}" +
-        "|655[0-2][0-9]" +
-        "|6553[0-5])" +
-        "$";
-    final var passwordRegex = ".+";
-    final var hostInfoRegex = userNameRegex
-        + "@" + hostNameRegex
-        + ":" + portRegex
-        + "\\s+" + passwordRegex;
-    if (hostInfo.matches(hostInfoRegex)) {
-      final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
-      final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
-      final var port = Integer.parseInt(hostInfo.substring(hostInfo.indexOf(':') + 1));
-      final var password = hostInfo.split("\\s+")[1];
-      sessionFactory.setUsername(username);
-      sessionFactory.setHostname(hostname);
-      sessionFactory.setPort(port);
-      sessionFactory.setPassword(password);
-
-      sessionFactory.setConfig("StrictHostKeyChecking", "no");
-
-      addResponse("[User info is set]");
-    } else {
-      addResponse("[Invalid user info format]");
-    }
-  }
-
-  public void sendMessage() {
-    final var sendMessageRequest = new SendMessage()
-        .setChatId(getChatId())
-        .setText(getResponse());
-    try {
-      sendMessage.accept(sendMessageRequest);
-    } catch (Exception e) {
-      e.printStackTrace();
-      addResponse(e.getMessage());
-    }
-  }
-
-  public void sendDocument(
-      final String documentName,
-      final InputStream inputStream) {
-    final var sendDocumentRequest = new SendDocument()
-        .setChatId(getChatId())
-        .setDocument(documentName, inputStream)
-        .setCaption(documentName);
-    try {
-      sendDocument.accept(sendDocumentRequest);
-    } catch (Exception e) {
-      e.printStackTrace();
-      addResponse(e.getMessage());
-    }
-  }
-
-  @PreDestroy
-  public void close() {
-    try {
-      getCommandRunner().close();
-    } catch (IOException e) {
-      e.printStackTrace();
-      addResponse(e.getMessage());
-    }
-    sessionFactory = new DefaultSessionFactory();
-    commandRunner = new CommandRunner(sessionFactory);
-    sftpRunner = new SftpRunner(sessionFactory);
-    currentDir = "~";
-    receivedMessage = null;
-    addResponse("[User info cleared]");
   }
 }
 
