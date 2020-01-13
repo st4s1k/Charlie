@@ -7,6 +7,7 @@ import com.st4s1k.charlie.service.CharlieTelegramBot;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.telegram.telegrambots.meta.api.objects.Message;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
@@ -27,7 +28,7 @@ public class ChatSession {
   private SftpRunner sftpRunner;
   @Getter(NONE)
   private StringBuilder responseBuffer;
-  private String receivedMessage;
+  private Message receivedMessage;
   private String currentDir;
 
   public ChatSession(

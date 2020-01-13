@@ -6,8 +6,10 @@ import com.st4s1k.charlie.data.model.ChatSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,7 +68,7 @@ public class CharlieService {
   }
 
   public void parse(final ChatSession chatSession) {
-    final var receivedMessage = chatSession.getReceivedMessage();
+    final var receivedMessage = chatSession.getReceivedMessage().getText();
     if (receivedMessage.startsWith("/")) {
       parseCommand(chatSession);
     } else {
@@ -74,12 +76,15 @@ public class CharlieService {
     }
   }
 
+  @SuppressWarnings("MethodComplexity")
   public void parseCommand(final ChatSession chatSession) {
-    final var receivedMessage = chatSession.getReceivedMessage();
+    final var receivedMessage = chatSession.getReceivedMessage().getText();
 
     if (receivedMessage.matches("/rsa\\s+[\\s\\S]+")) {
       final var idRsa = receivedMessage.replaceFirst("/rsa\\s+", "");
       setIdentity(idRsa, chatSession);
+    } else if (receivedMessage.matches("/rsa$")) {
+      setIdentity(chatSession);
     } else if (receivedMessage.matches("/ui\\s+.+")) {
       final var hostInfo = receivedMessage.replaceFirst("/ui\\s+", "");
       parseConnectionInfo(hostInfo, chatSession);
@@ -122,6 +127,31 @@ public class CharlieService {
 
       chatSession.addResponse("[Identity is set]");
     } catch (IOException | JSchException e) {
+      e.printStackTrace();
+      chatSession.addResponse(e.getMessage());
+    }
+  }
+
+  private void setIdentity(final ChatSession chatSession) {
+    try {
+      final var identityFile = downloadFile(chatSession);
+
+      final var identityFilePath = identityFile.getPath();
+
+      chatSession.getSessionFactory()
+          .setIdentityFromPrivateKey(identityFilePath);
+
+      chatSession.getSessionFactory()
+          .setKnownHosts(knownHostsFile);
+
+      final var hostName = chatSession.getSessionFactory().getHostname();
+
+      addToKnownHosts(hostName);
+
+      chatSession.addResponse("[Identity is set]");
+    } catch (IOException
+        | JSchException
+        | TelegramApiException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
     }
@@ -185,6 +215,7 @@ public class CharlieService {
       sessionFactory.setHostname(hostname);
       sessionFactory.setPort(Integer.parseInt(port));
       sessionFactory.setConfig("StrictHostKeyChecking", "no");
+      sessionFactory.setConfig("PreferredAuthentications", "publickey,password");
       chatSession.addResponse("[User info is set]");
     } else {
       chatSession.addResponse("[Invalid user info format]");
@@ -219,6 +250,13 @@ public class CharlieService {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
     }
+  }
+
+  public File downloadFile(final ChatSession chatSession) throws TelegramApiException {
+    final var charlie = chatSession.getCharlie();
+    final var message = chatSession.getReceivedMessage();
+    return charlie.downloadFile(charlie.execute(new GetFile().setFileId(
+        message.getDocument().getFileId())));
   }
 
   public void pwd(final ChatSession chatSession) {
