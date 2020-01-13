@@ -106,7 +106,7 @@ public class CharlieService {
       final String hostInfo,
       final ChatSession chatSession) {
     final var userNameRegex = "[A-Za-z0-9\\-.]+";
-    final var hostNameRegex = "[a-z_][a-z0-9_\\-]*[$]?";
+    final var hostNameRegex = "^\\d+{1,3}\\.\\d+{1,3}\\.\\d+{1,3}\\.\\d+{1,3}$";
     final var portRegex = "^" +
         "([0-9]{1,4}" +
         "|[1-5][0-9]{4}" +
