@@ -4,10 +4,12 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import com.st4s1k.charlie.data.model.ChatSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -18,6 +20,9 @@ import java.nio.file.Path;
 public class CharlieService {
 
   public static final String HOME = "~";
+
+  @Value("${jsch.dotSsh}")
+  private String dotSsh;
 
   public void sendDocumentToChat(
       final String remoteFilePath,
@@ -92,13 +97,18 @@ public class CharlieService {
     try {
       final var userName = chatSession.getUserName();
       final var hostName = chatSession.getSessionFactory().getHostname();
-      final var file = "id_rsa_" + userName + "_" + hostName;
+      final var file = dotSsh + "/id_rsa_" + userName + "_" + hostName;
       final var filePath = Path.of(file);
       if (!idRsa.matches("^[\\s\\S]+\\n$")) {
         idRsa += "\n";
       }
+      final var dotSshDir = new File(dotSsh);
+      if (!dotSshDir.exists()) {
+        dotSshDir.mkdirs();
+      }
       Files.write(filePath, idRsa.getBytes());
-      chatSession.getSessionFactory().setIdentityFromPrivateKey(file);
+      chatSession.getSessionFactory()
+          .setIdentityFromPrivateKey(file);
     } catch (IOException | JSchException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
@@ -127,7 +137,7 @@ public class CharlieService {
       sessionFactory.setUsername(username);
       sessionFactory.setHostname(hostname);
       sessionFactory.setPort(Integer.parseInt(port));
-      sessionFactory.setConfig("StrictHostKeyChecking", "no");
+//      sessionFactory.setConfig("StrictHostKeyChecking", "no");
       chatSession.addResponse("[User info is set]");
     } else {
       chatSession.addResponse("[Invalid user info format]");
