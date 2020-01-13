@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import javax.annotation.PreDestroy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -60,5 +61,11 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
     } catch (Throwable e) {
       e.printStackTrace();
     }
+  }
+
+  @PreDestroy
+  public void cleanUp() {
+    sessions.values()
+        .forEach(ChatSession::reset);
   }
 }

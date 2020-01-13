@@ -8,6 +8,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import javax.annotation.PreDestroy;
+import java.io.IOException;
+
+import static com.st4s1k.charlie.service.CharlieService.HOME;
 import static lombok.AccessLevel.NONE;
 
 @Data
@@ -57,6 +61,22 @@ public class ChatSession {
 
   public void clearResponseBuffer() {
     responseBuffer.delete(0, responseBuffer.length());
+  }
+
+  @PreDestroy
+  public void reset() {
+    try {
+      commandRunner.close();
+      sftpRunner.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+      addResponse(e.getMessage());
+    }
+    sessionFactory = new DefaultSessionFactory();
+    commandRunner = new CommandRunner(sessionFactory);
+    sftpRunner = new SftpRunner(sessionFactory);
+    currentDir = HOME;
+    receivedMessage = null;
   }
 }
 
