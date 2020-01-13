@@ -78,25 +78,30 @@ public class CharlieService {
 
   @SuppressWarnings("MethodComplexity")
   public void parseCommand(final ChatSession chatSession) {
-    final var receivedMessage = chatSession.getReceivedMessage().getText();
+    final var receivedMessage = chatSession.getReceivedMessage();
+    final var receivedText = receivedMessage.hasText()
+        ? receivedMessage.getText()
+        : receivedMessage.hasDocument()
+        ? receivedMessage.getCaption()
+        : "";
 
-    if (receivedMessage.matches("/rsa\\s+[\\s\\S]+")) {
-      final var idRsa = receivedMessage.replaceFirst("/rsa\\s+", "");
+    if (receivedText.matches("/rsa\\s+[\\s\\S]+")) {
+      final var idRsa = receivedText.replaceFirst("/rsa\\s+", "");
       setIdentity(idRsa, chatSession);
-    } else if (receivedMessage.matches("/rsa$")) {
+    } else if (receivedText.matches("/rsa$")) {
       setIdentity(chatSession);
-    } else if (receivedMessage.matches("/ui\\s+.+")) {
-      final var hostInfo = receivedMessage.replaceFirst("/ui\\s+", "");
+    } else if (receivedText.matches("/ui\\s+.+")) {
+      final var hostInfo = receivedText.replaceFirst("/ui\\s+", "");
       parseConnectionInfo(hostInfo, chatSession);
-    } else if (receivedMessage.matches("/cd\\s+.+")) {
-      final var dir = receivedMessage.replaceFirst("/cd\\s+", "");
+    } else if (receivedText.matches("/cd\\s+.+")) {
+      final var dir = receivedText.replaceFirst("/cd\\s+", "");
       cd(dir, chatSession);
-    } else if (receivedMessage.equals("/pwd")) {
+    } else if (receivedText.equals("/pwd")) {
       pwd(chatSession);
-    } else if (receivedMessage.matches("/download\\s+.+")) {
-      final var remoteFilePath = receivedMessage.replaceFirst("/download\\s+", "");
+    } else if (receivedText.matches("/download\\s+.+")) {
+      final var remoteFilePath = receivedText.replaceFirst("/download\\s+", "");
       sendDocumentToChat(remoteFilePath, chatSession);
-    } else if (receivedMessage.equals("/disconnect")) {
+    } else if (receivedText.equals("/disconnect")) {
       close(chatSession);
     } else {
       chatSession.addResponse("Unknown command ...");
