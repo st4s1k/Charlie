@@ -184,7 +184,7 @@ public class CharlieService {
       sessionFactory.setUsername(username);
       sessionFactory.setHostname(hostname);
       sessionFactory.setPort(Integer.parseInt(port));
-//      sessionFactory.setConfig("StrictHostKeyChecking", "no");
+      sessionFactory.setConfig("StrictHostKeyChecking", "no");
       chatSession.addResponse("[User info is set]");
     } else {
       chatSession.addResponse("[Invalid user info format]");
