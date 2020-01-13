@@ -23,8 +23,6 @@ public class CharlieService {
 
   public static final String HOME = "~";
 
-  private final CharlieTelegramBot charlie;
-
   public void sendDocumentToChat(
       final String remoteFilePath,
       final ChatSession chatSession) {
@@ -141,7 +139,7 @@ public class CharlieService {
         .setChatId(chatSession.getChatId())
         .setText(chatSession.getResponse());
     try {
-      charlie.execute(sendMessageRequest);
+      chatSession.getCharlie().execute(sendMessageRequest);
     } catch (Exception e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
@@ -157,7 +155,7 @@ public class CharlieService {
         .setDocument(documentName, inputStream)
         .setCaption(documentName);
     try {
-      charlie.execute(sendDocumentRequest);
+      chatSession.getCharlie().execute(sendDocumentRequest);
     } catch (Exception e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
