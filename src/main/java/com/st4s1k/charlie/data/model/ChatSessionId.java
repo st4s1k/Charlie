@@ -11,14 +11,9 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ChatSessionId {
 
-  private final Long chatId;
+  private final Chat chat;
 
-  private final Integer userId;
-
-  public ChatSessionId(final Chat chat, final User user) {
-    this.chatId = chat.getId();
-    this.userId = user.getId();
-  }
+  private final User user;
 
   @Override
   @SuppressWarnings("ObjectComparison")
@@ -26,12 +21,12 @@ public class ChatSessionId {
     if (this == o) return true;
     if (!(o instanceof ChatSessionId)) return false;
     final ChatSessionId that = (ChatSessionId) o;
-    return Objects.equals(chatId, that.chatId) &&
-        Objects.equals(userId, that.userId);
+    return Objects.equals(chat.getId(), that.chat.getId()) &&
+        Objects.equals(user.getId(), that.user.getId());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(chatId, userId);
+    return Objects.hash(chat.getId(), user.getId());
   }
 }

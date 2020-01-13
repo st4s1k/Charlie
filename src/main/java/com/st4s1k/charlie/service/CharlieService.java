@@ -15,7 +15,7 @@ import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +25,7 @@ public class CharlieService {
 
   private final CharlieTelegramBot charlie;
 
-  public void downloadAndSendDocument(
+  public void sendDocumentToChat(
       final String remoteFilePath,
       final ChatSession chatSession) {
     try {
@@ -84,7 +84,7 @@ public class CharlieService {
       pwd(chatSession);
     } else if (receivedMessage.matches("/download\\s+.+")) {
       final var remoteFilePath = receivedMessage.split("\\s+")[1];
-      downloadAndSendDocument(remoteFilePath, chatSession);
+      sendDocumentToChat(remoteFilePath, chatSession);
     } else if (receivedMessage.equals("/disconnect")) {
       close(chatSession);
     } else {
@@ -96,8 +96,12 @@ public class CharlieService {
       final String idRsa,
       final ChatSession chatSession) {
     try {
-      Files.write(Paths.get("id_rsa"), idRsa.getBytes());
-      chatSession.getSessionFactory().setIdentityFromPrivateKey("id_rsa");
+      final var userName = chatSession.getUserName();
+      final var hostName = chatSession.getSessionFactory().getHostname();
+      final var file = "id_rsa_" + userName + hostName;
+      final var filePath = Path.of(file);
+      Files.write(filePath, idRsa.getBytes());
+      chatSession.getSessionFactory().setIdentityFromPrivateKey(file);
     } catch (IOException | JSchException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());

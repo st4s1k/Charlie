@@ -38,7 +38,11 @@ public class ChatSession {
   }
 
   public Long getChatId() {
-    return id.getChatId();
+    return id.getChat().getId();
+  }
+
+  public String getUserName() {
+    return id.getUser().getUserName();
   }
 
   public void addResponse(final String response) {
