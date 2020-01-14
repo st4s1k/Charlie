@@ -1,17 +1,15 @@
 package com.st4s1k.charlie.service;
 
+import com.jcraft.jsch.JSch;
 import com.st4s1k.charlie.data.model.ChatSession;
 import com.st4s1k.charlie.data.model.ChatSessionId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.annotation.PreDestroy;
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 public class CharlieTelegramBot extends TelegramLongPollingBot {
 
   private final CharlieService charlieService;
+  private final JSch jsch;
 
   @Value("${charlie.token}")
   private String token;
@@ -51,7 +50,7 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         final var chatSessionId = new ChatSessionId(chat, user);
 
         sessions.computeIfAbsent(chatSessionId, id ->
-            new ChatSession(id, this));
+            new ChatSession(jsch, id, this));
 
         final var chatSession = sessions.get(chatSessionId);
 
