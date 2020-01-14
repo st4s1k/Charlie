@@ -178,23 +178,24 @@ public class CharlieService {
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   private void createFile(final File file) throws IOException {
-    final var path = file.getPath();
-    final var fileDir = new File(path.substring(0, path.lastIndexOf('/')));
-    if (!fileDir.exists()) {
-      fileDir.mkdirs();
-    }
+    final var filePath = file.getPath();
+    createFileDirs(filePath);
     if (!file.exists()) {
       file.createNewFile();
     }
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
-  private void createFile(final String file, final String content) throws IOException {
-    final var fileDir = new File(file.substring(0, file.lastIndexOf('/')));
+  private void createFileDirs(final String filePath) {
+    final var fileDir = new File(filePath.substring(0, filePath.lastIndexOf('/')));
     if (!fileDir.exists()) {
       fileDir.mkdirs();
     }
-    Files.write(Path.of(file), content.getBytes());
+  }
+
+  private void createFile(final String filePath, final String content) throws IOException {
+    createFileDirs(filePath);
+    Files.write(Path.of(filePath), content.getBytes());
   }
 
   public void parseConnectionInfo(
