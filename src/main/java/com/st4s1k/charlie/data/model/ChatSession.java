@@ -29,9 +29,6 @@ public class ChatSession {
   private StringBuilder responseBuffer;
   private Message receivedMessage;
   private String currentDir;
-  private String userName;
-  private String hostName;
-  private String password;
   private String publicKey;
 
   public ChatSession(
@@ -67,8 +64,6 @@ public class ChatSession {
   }
 
   public void runSftp(Consumer<ChannelSftp> sftpRunner) throws JSchException {
-    final var session = jsch.getSession(userName, hostName);
-    session.connect();
     final var sftp = (ChannelSftp) session.openChannel("sftp");
     sftp.connect();
     sftpRunner.accept(sftp);
@@ -97,6 +92,8 @@ public class ChatSession {
 
   private void genKeyPair(final String dotSsh)
       throws JSchException, IOException {
+    final var userName = session.getUserName();
+    final var hostName = session.getHost();
     final var filename = dotSsh + "/id_rsa_" + userName + "_" + hostName;
     final var keyPair = KeyPair.genKeyPair(jsch, RSA);
     keyPair.writePrivateKey(filename);
@@ -114,6 +111,7 @@ public class ChatSession {
     session.setConfig("StrictHostKeyChecking", "no");
     session.setConfig("PreferredAuthentications", "publickey,password");
     genKeyPair(dotSsh);
+    session.connect();
   }
 
   @PreDestroy
