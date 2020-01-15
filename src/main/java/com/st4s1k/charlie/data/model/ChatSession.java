@@ -74,6 +74,7 @@ public class ChatSession {
   }
 
   public String sendCommand(String command) throws JSchException, IOException {
+    session.connect();
     final var outputBuffer = new StringBuilder();
     final var exec = (ChannelExec) session.openChannel("exec");
 
@@ -90,6 +91,7 @@ public class ChatSession {
     }
 
     exec.disconnect();
+    session.disconnect();
     return outputBuffer.toString();
   }
 
@@ -134,15 +136,10 @@ public class ChatSession {
     genKeyPair();
   }
 
-  public void connect() throws JSchException {
-    session.connect();
-  }
-
   @PreDestroy
   public void reset() {
     currentDir = HOME;
     receivedMessage = null;
-    session.disconnect();
   }
 }
 

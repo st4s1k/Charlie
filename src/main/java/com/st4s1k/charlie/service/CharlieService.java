@@ -73,8 +73,6 @@ public class CharlieService {
     if (receivedText.matches("^/ui\\s+.+")) {
       final var hostInfo = receivedText.replaceFirst("^/ui\\s+", "");
       parseConnectionInfo(hostInfo, chatSession);
-    } else if (receivedText.matches("^/connect(\\s+)?$")) {
-      connect(chatSession);
     } else if (receivedText.matches("^/cd\\s+.+")) {
       final var dir = receivedText.replaceFirst("^/cd\\s+", "");
       cd(dir, chatSession);
@@ -87,15 +85,6 @@ public class CharlieService {
       close(chatSession);
     } else {
       chatSession.addResponse("Unknown command ...");
-    }
-  }
-
-  private void connect(final ChatSession chatSession) {
-    try {
-      chatSession.connect();
-    } catch (JSchException e) {
-      e.printStackTrace();
-      chatSession.addResponse(e.getMessage());
     }
   }
 
