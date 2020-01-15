@@ -4,11 +4,12 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import com.st4s1k.charlie.data.model.ChatSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -17,9 +18,6 @@ import java.io.InputStream;
 public class CharlieService {
 
   public static final String HOME = "~";
-
-  @Value("${jsch.dotSsh}")
-  private String dotSsh;
 
   public void sendDocumentToChat(
       final String remoteFilePath,
@@ -112,9 +110,11 @@ public class CharlieService {
       final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
       final var port = hostInfo.substring(hostInfo.indexOf(':') + 1);
       try {
-        chatSession.setSession(username, hostname, Integer.parseInt(port), dotSsh);
+        chatSession.setSession(username, hostname, Integer.parseInt(port));
         chatSession.addResponse("[User info is set]\n");
-        chatSession.addResponse("Your public key is:\n" + chatSession.getPublicKey());
+        final var fileInputStream = new FileInputStream(chatSession.getPublicKeyPath());
+        final var bufferedInputStream = new BufferedInputStream(fileInputStream);
+        sendDocument("id_rsa.pub", bufferedInputStream, chatSession);
       } catch (JSchException | IOException e) {
         e.printStackTrace();
         chatSession.addResponse(e.getMessage());

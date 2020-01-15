@@ -30,7 +30,8 @@ public class ChatSession {
   private StringBuilder responseBuffer;
   private Message receivedMessage;
   private String currentDir;
-  private String publicKey;
+  private String publicKeyPath;
+  private String dotSsh;
 
   public ChatSession(
       final JSch jsch,
@@ -40,6 +41,7 @@ public class ChatSession {
     this.jsch = jsch;
     this.charlie = charlie;
     this.responseBuffer = new StringBuilder();
+    this.dotSsh = System.getProperty("jsch.dotSsh");
   }
 
   public Long getChatId() {
@@ -108,7 +110,7 @@ public class ChatSession {
     }
   }
 
-  private void genKeyPair(final String dotSsh)
+  private void genKeyPair()
       throws JSchException, IOException {
     final var userName = session.getUserName();
     final var hostName = session.getHost();
@@ -117,20 +119,19 @@ public class ChatSession {
 
     createFile(file);
     keyPair.writePrivateKey(file);
-    keyPair.writePublicKey(file + ".pub", userName + "@" + hostName);
-    publicKey = new String(keyPair.getPublicKeyBlob());
+    this.publicKeyPath = file + ".pub";
+    keyPair.writePublicKey(publicKeyPath, userName + "@" + hostName);
     keyPair.dispose();
   }
 
   public void setSession(
       final String userName,
       final String hostName,
-      final int port,
-      final String dotSsh) throws JSchException, IOException {
+      final int port) throws JSchException, IOException {
     session = jsch.getSession(userName, hostName, port);
     session.setConfig("StrictHostKeyChecking", "no");
     session.setConfig("PreferredAuthentications", "publickey,password");
-    genKeyPair(dotSsh);
+    genKeyPair();
     session.connect();
   }
 
