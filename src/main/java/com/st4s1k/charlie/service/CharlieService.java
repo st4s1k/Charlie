@@ -73,7 +73,7 @@ public class CharlieService {
     if (receivedText.matches("^/ui\\s+.+")) {
       final var hostInfo = receivedText.replaceFirst("^/ui\\s+", "");
       parseConnectionInfo(hostInfo, chatSession);
-    } else if (receivedText.matches("^/connect\\s+$")) {
+    } else if (receivedText.matches("^/connect(\\s+)?$")) {
       connect(chatSession);
     } else if (receivedText.matches("^/cd\\s+.+")) {
       final var dir = receivedText.replaceFirst("^/cd\\s+", "");
