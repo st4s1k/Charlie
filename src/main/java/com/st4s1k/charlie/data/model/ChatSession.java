@@ -8,6 +8,7 @@ import lombok.Getter;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
 import javax.annotation.PreDestroy;
+import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
 
@@ -90,14 +91,33 @@ public class ChatSession {
     return outputBuffer.toString();
   }
 
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private void createFile(final String filePath) throws IOException {
+    final var file = new File(filePath);
+    createFileDirs(filePath);
+    if (!file.exists()) {
+      file.createNewFile();
+    }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private void createFileDirs(final String filePath) {
+    final var fileDir = new File(filePath.substring(0, filePath.lastIndexOf('/')));
+    if (!fileDir.exists()) {
+      fileDir.mkdirs();
+    }
+  }
+
   private void genKeyPair(final String dotSsh)
       throws JSchException, IOException {
     final var userName = session.getUserName();
     final var hostName = session.getHost();
-    final var filename = dotSsh + "/id_rsa_" + userName + "_" + hostName;
+    final var file = dotSsh + "/id_rsa_" + userName + "_" + hostName;
     final var keyPair = KeyPair.genKeyPair(jsch, RSA);
-    keyPair.writePrivateKey(filename);
-    keyPair.writePublicKey(filename + ".pub", userName + "@" + hostName);
+
+    createFile(file);
+    keyPair.writePrivateKey(file);
+    keyPair.writePublicKey(file + ".pub", userName + "@" + hostName);
     publicKey = new String(keyPair.getPublicKeyBlob());
     keyPair.dispose();
   }
