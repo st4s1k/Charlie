@@ -132,6 +132,9 @@ public class ChatSession {
     session.setConfig("StrictHostKeyChecking", "no");
     session.setConfig("PreferredAuthentications", "publickey,password");
     genKeyPair();
+  }
+
+  public void connect() throws JSchException {
     session.connect();
   }
 

@@ -70,21 +70,32 @@ public class CharlieService {
         ? receivedMessage.getCaption()
         : "";
 
-    if (receivedText.matches("/ui\\s+.+")) {
-      final var hostInfo = receivedText.replaceFirst("/ui\\s+", "");
+    if (receivedText.matches("^/ui\\s+.+")) {
+      final var hostInfo = receivedText.replaceFirst("^/ui\\s+", "");
       parseConnectionInfo(hostInfo, chatSession);
-    } else if (receivedText.matches("/cd\\s+.+")) {
-      final var dir = receivedText.replaceFirst("/cd\\s+", "");
+    } else if (receivedText.matches("^/connect\\s+$")) {
+      connect(chatSession);
+    } else if (receivedText.matches("^/cd\\s+.+")) {
+      final var dir = receivedText.replaceFirst("^/cd\\s+", "");
       cd(dir, chatSession);
     } else if (receivedText.equals("/pwd")) {
       pwd(chatSession);
-    } else if (receivedText.matches("/download\\s+.+")) {
-      final var remoteFilePath = receivedText.replaceFirst("/download\\s+", "");
+    } else if (receivedText.matches("^/download\\s+.+")) {
+      final var remoteFilePath = receivedText.replaceFirst("^/download\\s+", "");
       sendDocumentToChat(remoteFilePath, chatSession);
     } else if (receivedText.equals("/disconnect")) {
       close(chatSession);
     } else {
       chatSession.addResponse("Unknown command ...");
+    }
+  }
+
+  private void connect(final ChatSession chatSession) {
+    try {
+      chatSession.connect();
+    } catch (JSchException e) {
+      e.printStackTrace();
+      chatSession.addResponse(e.getMessage());
     }
   }
 
