@@ -125,7 +125,8 @@ public class CharlieService {
         chatSession.addResponse("[User info is set]\n");
         final var fileInputStream = new FileInputStream(chatSession.getPublicKeyPath());
         final var bufferedInputStream = new BufferedInputStream(fileInputStream);
-        sendDocument("id_rsa.pub", bufferedInputStream, chatSession);
+        final var documentName = "id_rsa_" + username + "_" + hostname + ".pub";
+        sendDocument(documentName, bufferedInputStream, chatSession);
       } catch (JSchException | IOException e) {
         e.printStackTrace();
         chatSession.addResponse(e.getMessage());
