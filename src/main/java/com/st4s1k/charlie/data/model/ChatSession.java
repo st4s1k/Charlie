@@ -20,10 +20,11 @@ import static lombok.AccessLevel.NONE;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ChatSession {
 
-  private final JSch jsch;
   @EqualsAndHashCode.Include
   private final ChatSessionId id;
+  private final String dotSsh;
   private final CharlieTelegramBot charlie;
+  private final JSch jsch;
 
   private Session session;
   @Getter(NONE)
@@ -31,20 +32,20 @@ public class ChatSession {
   private Message receivedMessage;
   private String currentDir;
   private String publicKeyPath;
-  private String dotSsh;
   private String userName;
   private String hostName;
   private int port;
 
   public ChatSession(
-      final JSch jsch,
       final ChatSessionId id,
-      final CharlieTelegramBot charlie) {
+      final String dotSsh,
+      final CharlieTelegramBot charlie,
+      final JSch jsch) {
     this.id = id;
-    this.jsch = jsch;
+    this.dotSsh = dotSsh;
     this.charlie = charlie;
+    this.jsch = jsch;
     this.responseBuffer = new StringBuilder();
-    this.dotSsh = System.getProperty("jsch.dotSsh");
   }
 
   public Long getChatId() {

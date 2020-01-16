@@ -27,6 +27,9 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   @Value("${charlie.username}")
   private String username;
 
+  @Value("${jsch.dotSsh}")
+  private String dotSsh;
+
   private Map<ChatSessionId, ChatSession> sessions = new HashMap<>();
 
   @Override
@@ -50,7 +53,7 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
         final var chatSessionId = new ChatSessionId(chat, user);
 
         sessions.computeIfAbsent(chatSessionId, id ->
-            new ChatSession(jsch, id, this));
+            new ChatSession(id, dotSsh, this, jsch));
 
         final var chatSession = sessions.get(chatSessionId);
 
