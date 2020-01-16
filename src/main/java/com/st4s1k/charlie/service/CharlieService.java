@@ -182,8 +182,7 @@ public class CharlieService {
       final var publicKeyPath = chatSession.getPublicKeyPath();
       final var fileInputStream = new FileInputStream(publicKeyPath);
       final var bufferedInputStream = new BufferedInputStream(fileInputStream);
-      final var documentName = publicKeyPath.substring(publicKeyPath.lastIndexOf('/') + 1);
-      sendDocument(documentName, bufferedInputStream, chatSession);
+      sendDocument("id_rsa_charlie.pub", bufferedInputStream, chatSession);
     } catch (JSchException | IOException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());

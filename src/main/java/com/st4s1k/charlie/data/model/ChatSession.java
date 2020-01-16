@@ -20,13 +20,14 @@ import static lombok.AccessLevel.NONE;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ChatSession {
 
+  private static final int TIMEOUT = 3000;
+
   @EqualsAndHashCode.Include
   private final ChatSessionId id;
   private final String dotSsh;
   private final CharlieTelegramBot charlie;
   private final JSch jsch;
 
-  private Session session;
   @Getter(NONE)
   private StringBuilder responseBuffer;
   private Message receivedMessage;
@@ -71,6 +72,7 @@ public class ChatSession {
   }
 
   public void runSftp(Consumer<ChannelSftp> sftpRunner) throws JSchException {
+    final var session = getSession();
     final var sftp = (ChannelSftp) session.openChannel("sftp");
     sftp.connect();
     sftpRunner.accept(sftp);
@@ -78,13 +80,14 @@ public class ChatSession {
   }
 
   public String sendCommand(String command) throws JSchException, IOException {
-    session = jsch.getSession(userName, hostName, port);
+    final var session = getSession();
+    session.connect();
+
+    final var exec = (ChannelExec) session.openChannel("exec");
+    exec.setCommand(command);
+    exec.connect(TIMEOUT);
+
     final var outputBuffer = new StringBuilder();
-    final var exec = session.openChannel("exec");
-
-    ((ChannelExec) exec).setCommand(command);
-    exec.connect();
-
     final var commandOutput = exec.getInputStream();
     {
       var readByte = commandOutput.read();
@@ -97,6 +100,10 @@ public class ChatSession {
     exec.disconnect();
     session.disconnect();
     return outputBuffer.toString();
+  }
+
+  private Session getSession() throws JSchException {
+    return jsch.getSession(userName, hostName, port);
   }
 
   public void genKeyPair()
