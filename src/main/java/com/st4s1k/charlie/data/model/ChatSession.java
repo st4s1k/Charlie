@@ -137,6 +137,7 @@ public class ChatSession {
     receivedMessage = null;
     userName = null;
     hostName = null;
+    password = null;
     port = 0;
   }
 }
