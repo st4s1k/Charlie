@@ -15,7 +15,7 @@ public class JSchConfiguration {
     final var jsch = new JSch();
     jsch.setKnownHosts(knownHostsFile);
     JSch.setConfig("StrictHostKeyChecking", "no");
-    JSch.setConfig("PreferredAuthentications", "publickey");
+    JSch.setConfig("PreferredAuthentications", "publickey,password");
     return jsch;
   }
 }

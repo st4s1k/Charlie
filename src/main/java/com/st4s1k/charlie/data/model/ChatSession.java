@@ -15,13 +15,14 @@ import java.util.function.Consumer;
 import static com.jcraft.jsch.KeyPair.RSA;
 import static com.st4s1k.charlie.service.CharlieService.HOME;
 import static com.st4s1k.charlie.service.CharlieService.createFile;
+import static java.util.Objects.nonNull;
 import static lombok.AccessLevel.NONE;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ChatSession {
 
-  private static final int TIMEOUT = 3000;
+  private static final int TIMEOUT = 0;
 
   @EqualsAndHashCode.Include
   private final ChatSessionId id;
@@ -33,6 +34,7 @@ public class ChatSession {
   private StringBuilder responseBuffer;
   private Message receivedMessage;
   private String currentDir;
+  private String password;
   private String publicKeyPath;
   private String userName;
   private String hostName;
@@ -75,6 +77,7 @@ public class ChatSession {
 
   public void runSftp(Consumer<ChannelSftp> sftpRunner) throws JSchException {
     final var session = getSession();
+    session.connect();
     final var sftp = (ChannelSftp) session.openChannel("sftp");
     sftp.connect();
     sftpRunner.accept(sftp);
@@ -86,21 +89,13 @@ public class ChatSession {
     session.connect();
 
     final var exec = (ChannelExec) session.openChannel("exec");
+    final var outputBuffer = new StringBuilder();
+    final var commandOutput = exec.getInputStream();
+
     exec.setCommand(command);
     exec.connect(TIMEOUT);
 
-    final var outputBuffer = new StringBuilder();
-    final var commandOutput = exec.getInputStream();
-    final var errStream = exec.getErrStream();
-
     var readByte = commandOutput.read();
-    while (readByte != 0xffffffff) {
-      outputBuffer.append((char) readByte);
-      readByte = commandOutput.read();
-    }
-
-    outputBuffer.append("\n");
-    readByte = errStream.read();
     while (readByte != 0xffffffff) {
       outputBuffer.append((char) readByte);
       readByte = commandOutput.read();
@@ -112,7 +107,11 @@ public class ChatSession {
   }
 
   private Session getSession() throws JSchException {
-    return jsch.getSession(userName, hostName, port);
+    final var session = jsch.getSession(userName, hostName, port);
+    if (nonNull(password)) {
+      session.setPassword(password);
+    }
+    return session;
   }
 
   public void genKeyPair()

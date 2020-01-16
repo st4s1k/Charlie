@@ -92,6 +92,9 @@ public class CharlieService {
     } else if (receivedText.matches("^/cd\\s+.+")) {
       final var dir = receivedText.replaceFirst("^/cd\\s+", "");
       cd(dir, chatSession);
+    } else if (receivedText.matches("^/password\\s+.+")) {
+      final var password = receivedText.replaceFirst("^/password\\s+", "");
+      chatSession.setPassword(password);
     } else if (receivedText.equals("/pwd")) {
       pwd(chatSession);
     } else if (receivedText.matches("^/download\\s+.+")) {
@@ -155,7 +158,9 @@ public class CharlieService {
     final var sendDocumentRequest = new SendDocument()
         .setChatId(chatSession.getChatId())
         .setDocument(documentName, inputStream)
-        .setCaption(documentName);
+        .setCaption("Execute this command on the remote ssh server:\n" +
+            "cat /path/to/" + documentName + " >> /path/to/.ssh/authorized_keys\n" +
+            "example: cat ./" + documentName + " >> ~/.ssh/authorized_keys");
     try {
       chatSession.getCharlie().execute(sendDocumentRequest);
     } catch (Exception e) {
