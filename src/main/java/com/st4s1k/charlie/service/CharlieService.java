@@ -8,16 +8,30 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 @Service
 @RequiredArgsConstructor
 public class CharlieService {
 
   public static final String HOME = "~";
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  public static void createFile(final String filePath) throws IOException {
+    final var file = new File(filePath);
+    createFileDirs(filePath);
+    if (!file.exists()) {
+      file.createNewFile();
+    }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  public static void createFileDirs(final String filePath) {
+    final var fileDir = new File(filePath.substring(0, filePath.lastIndexOf('/')));
+    if (!fileDir.exists()) {
+      fileDir.mkdirs();
+    }
+  }
 
   public void sendDocumentToChat(
       final String remoteFilePath,

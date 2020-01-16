@@ -8,12 +8,12 @@ import lombok.Getter;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
 import javax.annotation.PreDestroy;
-import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
 
 import static com.jcraft.jsch.KeyPair.RSA;
 import static com.st4s1k.charlie.service.CharlieService.HOME;
+import static com.st4s1k.charlie.service.CharlieService.createFile;
 import static lombok.AccessLevel.NONE;
 
 @Data
@@ -74,7 +74,9 @@ public class ChatSession {
   }
 
   public String sendCommand(String command) throws JSchException, IOException {
-    session.connect();
+    if (!session.isConnected()) {
+      session.connect();
+    }
     final var outputBuffer = new StringBuilder();
     final var exec = (ChannelExec) session.openChannel("exec");
 
@@ -91,25 +93,7 @@ public class ChatSession {
     }
 
     exec.disconnect();
-    session.disconnect();
     return outputBuffer.toString();
-  }
-
-  @SuppressWarnings("ResultOfMethodCallIgnored")
-  private void createFile(final String filePath) throws IOException {
-    final var file = new File(filePath);
-    createFileDirs(filePath);
-    if (!file.exists()) {
-      file.createNewFile();
-    }
-  }
-
-  @SuppressWarnings("ResultOfMethodCallIgnored")
-  private void createFileDirs(final String filePath) {
-    final var fileDir = new File(filePath.substring(0, filePath.lastIndexOf('/')));
-    if (!fileDir.exists()) {
-      fileDir.mkdirs();
-    }
   }
 
   private void genKeyPair()
@@ -140,6 +124,7 @@ public class ChatSession {
   public void reset() {
     currentDir = HOME;
     receivedMessage = null;
+    session.disconnect();
   }
 }
 
