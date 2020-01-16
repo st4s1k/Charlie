@@ -47,6 +47,7 @@ public class ChatSession {
     this.dotSsh = dotSsh;
     this.charlie = charlie;
     this.jsch = jsch;
+    this.currentDir = HOME;
     this.responseBuffer = new StringBuilder();
   }
 
@@ -91,18 +92,18 @@ public class ChatSession {
     final var outputBuffer = new StringBuilder();
     final var commandOutput = exec.getInputStream();
     final var errStream = exec.getErrStream();
-    {
-      var readByte = commandOutput.read();
-      while (readByte != 0xffffffff) {
-        outputBuffer.append((char) readByte);
-        readByte = commandOutput.read();
-      }
-      outputBuffer.append("\n");
-      readByte = errStream.read();
-      while (readByte != 0xffffffff) {
-        outputBuffer.append((char) readByte);
-        readByte = commandOutput.read();
-      }
+
+    var readByte = commandOutput.read();
+    while (readByte != 0xffffffff) {
+      outputBuffer.append((char) readByte);
+      readByte = commandOutput.read();
+    }
+
+    outputBuffer.append("\n");
+    readByte = errStream.read();
+    while (readByte != 0xffffffff) {
+      outputBuffer.append((char) readByte);
+      readByte = commandOutput.read();
     }
 
     exec.disconnect();
