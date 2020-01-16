@@ -90,8 +90,15 @@ public class ChatSession {
 
     final var outputBuffer = new StringBuilder();
     final var commandOutput = exec.getInputStream();
+    final var errStream = exec.getErrStream();
     {
       var readByte = commandOutput.read();
+      while (readByte != 0xffffffff) {
+        outputBuffer.append((char) readByte);
+        readByte = commandOutput.read();
+      }
+      outputBuffer.append("\n");
+      readByte = errStream.read();
       while (readByte != 0xffffffff) {
         outputBuffer.append((char) readByte);
         readByte = commandOutput.read();
