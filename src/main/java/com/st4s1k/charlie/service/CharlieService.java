@@ -122,22 +122,13 @@ public class CharlieService {
         "|6553[0-5])";
     final var hostInfoRegex = "^" + userNameRegex + "@" + hostNameRegex + ":" + portRegex + "$";
     if (hostInfo.matches(hostInfoRegex)) {
-      final var username = hostInfo.substring(0, hostInfo.indexOf('@'));
-      final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
+      final var userName = hostInfo.substring(0, hostInfo.indexOf('@'));
+      final var hostName = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
       final var port = hostInfo.substring(hostInfo.indexOf(':') + 1);
-      try {
-        chatSession.setUserName(username);
-        chatSession.setHostName(hostname);
-        chatSession.setPort(Integer.parseInt(port));
-        chatSession.addResponse("[User info is set]\n");
-        final var fileInputStream = new FileInputStream(chatSession.getPublicKeyPath());
-        final var bufferedInputStream = new BufferedInputStream(fileInputStream);
-        final var documentName = "id_rsa_" + username + "_" + hostname + ".pub";
-        sendDocument(documentName, bufferedInputStream, chatSession);
-      } catch (IOException e) {
-        e.printStackTrace();
-        chatSession.addResponse(e.getMessage());
-      }
+      chatSession.setUserName(userName);
+      chatSession.setHostName(hostName);
+      chatSession.setPort(Integer.parseInt(port));
+      chatSession.addResponse("[User info is set]\n");
     } else {
       chatSession.addResponse("[Invalid user info format]");
     }
@@ -188,6 +179,12 @@ public class CharlieService {
   private void keyGen(final ChatSession chatSession) {
     try {
       chatSession.genKeyPair();
+      final var fileInputStream = new FileInputStream(chatSession.getPublicKeyPath());
+      final var bufferedInputStream = new BufferedInputStream(fileInputStream);
+      final var userName = chatSession.getUserName();
+      final var hostName = chatSession.getHostName();
+      final var documentName = "id_rsa_" + userName + "_" + hostName + ".pub";
+      sendDocument(documentName, bufferedInputStream, chatSession);
     } catch (JSchException | IOException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
