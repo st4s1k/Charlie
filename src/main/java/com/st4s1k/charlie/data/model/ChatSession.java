@@ -116,7 +116,9 @@ public class ChatSession {
   public void reset() {
     currentDir = HOME;
     receivedMessage = null;
-    session.disconnect();
+    userName = null;
+    hostName = null;
+    port = 0;
   }
 }
 

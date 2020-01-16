@@ -87,8 +87,6 @@ public class CharlieService {
     if (receivedText.matches("^/ui\\s+.+")) {
       final var hostInfo = receivedText.replaceFirst("^/ui\\s+", "");
       parseConnectionInfo(hostInfo, chatSession);
-    } else if (receivedText.equals("/connect")) {
-      connect(chatSession);
     } else if (receivedText.equals("/keygen")) {
       keyGen(chatSession);
     } else if (receivedText.matches("^/cd\\s+.+")) {
@@ -99,8 +97,6 @@ public class CharlieService {
     } else if (receivedText.matches("^/download\\s+.+")) {
       final var remoteFilePath = receivedText.replaceFirst("^/download\\s+", "");
       sendDocumentToChat(remoteFilePath, chatSession);
-    } else if (receivedText.equals("/disconnect")) {
-      chatSession.getSession().disconnect();
     } else if (receivedText.equals("/reset")) {
       reset(chatSession);
     } else {
@@ -193,15 +189,6 @@ public class CharlieService {
     try {
       chatSession.genKeyPair();
     } catch (JSchException | IOException e) {
-      e.printStackTrace();
-      chatSession.addResponse(e.getMessage());
-    }
-  }
-
-  private void connect(final ChatSession chatSession) {
-    try {
-      chatSession.getSession().connect();
-    } catch (JSchException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
     }
