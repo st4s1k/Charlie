@@ -179,11 +179,10 @@ public class CharlieService {
   private void keyGen(final ChatSession chatSession) {
     try {
       chatSession.genKeyPair();
-      final var fileInputStream = new FileInputStream(chatSession.getPublicKeyPath());
+      final var publicKeyPath = chatSession.getPublicKeyPath();
+      final var fileInputStream = new FileInputStream(publicKeyPath);
       final var bufferedInputStream = new BufferedInputStream(fileInputStream);
-      final var userName = chatSession.getUserName();
-      final var hostName = chatSession.getHostName();
-      final var documentName = "id_rsa_" + userName + "_" + hostName + ".pub";
+      final var documentName = publicKeyPath.substring(publicKeyPath.lastIndexOf('/') + 1);
       sendDocument(documentName, bufferedInputStream, chatSession);
     } catch (JSchException | IOException e) {
       e.printStackTrace();

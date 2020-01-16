@@ -100,8 +100,6 @@ public class ChatSession {
 
   public void genKeyPair()
       throws JSchException, IOException {
-    final var userName = session.getUserName();
-    final var hostName = session.getHost();
     final var file = dotSsh + "/id_rsa_" + userName + "_" + hostName;
     final var keyPair = KeyPair.genKeyPair(jsch, RSA);
 
