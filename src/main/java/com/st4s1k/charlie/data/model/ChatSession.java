@@ -116,6 +116,8 @@ public class ChatSession {
     publicKeyPath = file + ".pub";
     keyPair.writePublicKey(publicKeyPath, userName + "@" + hostName);
     keyPair.dispose();
+
+    jsch.addIdentity(file);
   }
 
   @PreDestroy
