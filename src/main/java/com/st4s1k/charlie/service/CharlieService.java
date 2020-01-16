@@ -87,6 +87,8 @@ public class CharlieService {
     if (receivedText.matches("^/ui\\s+.+")) {
       final var hostInfo = receivedText.replaceFirst("^/ui\\s+", "");
       parseConnectionInfo(hostInfo, chatSession);
+    } else if (receivedText.equals("/connect")) {
+      connect(chatSession);
     } else if (receivedText.matches("^/cd\\s+.+")) {
       final var dir = receivedText.replaceFirst("^/cd\\s+", "");
       cd(dir, chatSession);
@@ -96,7 +98,9 @@ public class CharlieService {
       final var remoteFilePath = receivedText.replaceFirst("^/download\\s+", "");
       sendDocumentToChat(remoteFilePath, chatSession);
     } else if (receivedText.equals("/disconnect")) {
-      close(chatSession);
+      chatSession.getSession().disconnect();
+    } else if (receivedText.equals("/reset")) {
+      reset(chatSession);
     } else {
       chatSession.addResponse("Unknown command ...");
     }
@@ -181,7 +185,16 @@ public class CharlieService {
     executeCommand("ls", chatSession);
   }
 
-  public void close(final ChatSession chatSession) {
+  private void connect(final ChatSession chatSession) {
+    try {
+      chatSession.getSession().connect();
+    } catch (JSchException e) {
+      e.printStackTrace();
+      chatSession.addResponse(e.getMessage());
+    }
+  }
+
+  public void reset(final ChatSession chatSession) {
     chatSession.reset();
     chatSession.addResponse("[User info cleared]");
   }

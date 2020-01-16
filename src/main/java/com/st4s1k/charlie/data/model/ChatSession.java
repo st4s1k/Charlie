@@ -114,7 +114,6 @@ public class ChatSession {
     session = jsch.getSession(userName, hostName, port);
     session.setConfig("StrictHostKeyChecking", "no");
     session.setConfig("PreferredAuthentications", "publickey");
-    session.connect();
     genKeyPair();
   }
 
