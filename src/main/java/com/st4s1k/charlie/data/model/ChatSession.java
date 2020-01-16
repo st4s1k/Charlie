@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.function.Consumer;
 
 import static com.jcraft.jsch.KeyPair.RSA;
@@ -114,7 +115,10 @@ public class ChatSession {
     createFile(file);
     keyPair.writePrivateKey(file);
     publicKeyPath = file + ".pub";
-    keyPair.writePublicKey(publicKeyPath, userName + "@" + hostName);
+
+    final var charlieUserName = System.getProperty("user.name");
+    final var charlieHostName = InetAddress.getLocalHost().getHostName();
+    keyPair.writePublicKey(publicKeyPath, charlieUserName + "@" + charlieHostName);
     keyPair.dispose();
 
     jsch.addIdentity(file);
