@@ -74,13 +74,10 @@ public class ChatSession {
   }
 
   public String sendCommand(String command) throws JSchException, IOException {
-    if (!session.isConnected()) {
-      session.connect();
-    }
     final var outputBuffer = new StringBuilder();
-    final var exec = (ChannelExec) session.openChannel("exec");
+    final var exec = session.openChannel("exec");
 
-    exec.setCommand(command);
+    ((ChannelExec) exec).setCommand(command);
     exec.connect();
 
     final var commandOutput = exec.getInputStream();
@@ -105,7 +102,7 @@ public class ChatSession {
 
     createFile(file);
     keyPair.writePrivateKey(file);
-    this.publicKeyPath = file + ".pub";
+    publicKeyPath = file + ".pub";
     keyPair.writePublicKey(publicKeyPath, userName + "@" + hostName);
     keyPair.dispose();
   }
@@ -116,7 +113,8 @@ public class ChatSession {
       final int port) throws JSchException, IOException {
     session = jsch.getSession(userName, hostName, port);
     session.setConfig("StrictHostKeyChecking", "no");
-    session.setConfig("PreferredAuthentications", "publickey,password");
+    session.setConfig("PreferredAuthentications", "publickey");
+    session.connect();
     genKeyPair();
   }
 
