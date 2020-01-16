@@ -32,6 +32,9 @@ public class ChatSession {
   private String currentDir;
   private String publicKeyPath;
   private String dotSsh;
+  private String userName;
+  private String hostName;
+  private int port;
 
   public ChatSession(
       final JSch jsch,
@@ -74,6 +77,7 @@ public class ChatSession {
   }
 
   public String sendCommand(String command) throws JSchException, IOException {
+    session = jsch.getSession(userName, hostName, port);
     final var outputBuffer = new StringBuilder();
     final var exec = session.openChannel("exec");
 
@@ -90,10 +94,11 @@ public class ChatSession {
     }
 
     exec.disconnect();
+    session.disconnect();
     return outputBuffer.toString();
   }
 
-  private void genKeyPair()
+  public void genKeyPair()
       throws JSchException, IOException {
     final var userName = session.getUserName();
     final var hostName = session.getHost();
@@ -105,16 +110,6 @@ public class ChatSession {
     publicKeyPath = file + ".pub";
     keyPair.writePublicKey(publicKeyPath, userName + "@" + hostName);
     keyPair.dispose();
-  }
-
-  public void setSession(
-      final String userName,
-      final String hostName,
-      final int port) throws JSchException, IOException {
-    session = jsch.getSession(userName, hostName, port);
-    session.setConfig("StrictHostKeyChecking", "no");
-    session.setConfig("PreferredAuthentications", "publickey");
-    genKeyPair();
   }
 
   @PreDestroy

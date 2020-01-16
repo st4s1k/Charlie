@@ -58,8 +58,8 @@ public class CharlieService {
       final String command,
       final ChatSession chatSession) {
     try {
-      chatSession.addResponse(chatSession.sendCommand("cd " +
-          chatSession.getCurrentDir() + " && " + command));
+      chatSession.addResponse(chatSession
+          .sendCommand("cd " + chatSession.getCurrentDir() + " && " + command));
     } catch (JSchException | IOException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
@@ -89,6 +89,8 @@ public class CharlieService {
       parseConnectionInfo(hostInfo, chatSession);
     } else if (receivedText.equals("/connect")) {
       connect(chatSession);
+    } else if (receivedText.equals("/keygen")) {
+      keyGen(chatSession);
     } else if (receivedText.matches("^/cd\\s+.+")) {
       final var dir = receivedText.replaceFirst("^/cd\\s+", "");
       cd(dir, chatSession);
@@ -128,13 +130,15 @@ public class CharlieService {
       final var hostname = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
       final var port = hostInfo.substring(hostInfo.indexOf(':') + 1);
       try {
-        chatSession.setSession(username, hostname, Integer.parseInt(port));
+        chatSession.setUserName(username);
+        chatSession.setHostName(hostname);
+        chatSession.setPort(Integer.parseInt(port));
         chatSession.addResponse("[User info is set]\n");
         final var fileInputStream = new FileInputStream(chatSession.getPublicKeyPath());
         final var bufferedInputStream = new BufferedInputStream(fileInputStream);
         final var documentName = "id_rsa_" + username + "_" + hostname + ".pub";
         sendDocument(documentName, bufferedInputStream, chatSession);
-      } catch (JSchException | IOException e) {
+      } catch (IOException e) {
         e.printStackTrace();
         chatSession.addResponse(e.getMessage());
       }
@@ -183,6 +187,15 @@ public class CharlieService {
     executeCommand("cd " + dir + " && pwd", chatSession);
     chatSession.setCurrentDir(chatSession.getResponse().trim());
     executeCommand("ls", chatSession);
+  }
+
+  private void keyGen(final ChatSession chatSession) {
+    try {
+      chatSession.genKeyPair();
+    } catch (JSchException | IOException e) {
+      e.printStackTrace();
+      chatSession.addResponse(e.getMessage());
+    }
   }
 
   private void connect(final ChatSession chatSession) {

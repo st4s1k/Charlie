@@ -14,6 +14,8 @@ public class JSchConfiguration {
       final @Value("${jsch.knownHosts.file}") String knownHostsFile) throws JSchException {
     final var jsch = new JSch();
     jsch.setKnownHosts(knownHostsFile);
+    JSch.setConfig("StrictHostKeyChecking", "no");
+    JSch.setConfig("PreferredAuthentications", "publickey");
     return jsch;
   }
 }
