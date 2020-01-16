@@ -33,7 +33,7 @@ public class CharlieService {
     }
   }
 
-  public void sendDocumentToChat(
+  public void downloadAndSendDocumentToChat(
       final String remoteFilePath,
       final ChatSession chatSession) {
     try {
@@ -42,7 +42,7 @@ public class CharlieService {
           sftp.cd(chatSession.getCurrentDir() + "/");
           final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/') + 1);
           final var inputStream = sftp.get(remoteFilePath);
-          sendDocument(fileName, inputStream, chatSession);
+          sendDocument(fileName, inputStream, fileName, chatSession);
         } catch (SftpException e) {
           e.printStackTrace();
           chatSession.addResponse(e.getMessage());
@@ -99,7 +99,7 @@ public class CharlieService {
       pwd(chatSession);
     } else if (receivedText.matches("^/download\\s+.+")) {
       final var remoteFilePath = receivedText.replaceFirst("^/download\\s+", "");
-      sendDocumentToChat(remoteFilePath, chatSession);
+      downloadAndSendDocumentToChat(remoteFilePath, chatSession);
     } else if (receivedText.equals("/reset")) {
       reset(chatSession);
     } else {
@@ -154,13 +154,12 @@ public class CharlieService {
   public void sendDocument(
       final String documentName,
       final InputStream inputStream,
+      final String caption,
       final ChatSession chatSession) {
     final var sendDocumentRequest = new SendDocument()
         .setChatId(chatSession.getChatId())
         .setDocument(documentName, inputStream)
-        .setCaption("Execute this command on the remote ssh server:\n" +
-            "cat /path/to/" + documentName + " >> /path/to/.ssh/authorized_keys\n" +
-            "example: cat ./" + documentName + " >> ~/.ssh/authorized_keys");
+        .setCaption(caption);
     try {
       chatSession.getCharlie().execute(sendDocumentRequest);
     } catch (Exception e) {
@@ -187,7 +186,11 @@ public class CharlieService {
       final var publicKeyPath = chatSession.getPublicKeyPath();
       final var fileInputStream = new FileInputStream(publicKeyPath);
       final var bufferedInputStream = new BufferedInputStream(fileInputStream);
-      sendDocument("id_rsa_charlie.pub", bufferedInputStream, chatSession);
+      final var documentName = "id_rsa_charlie.pub";
+      final var caption = "Execute this command on the remote ssh server:\n" +
+          "cat /path/to/" + documentName + " >> /path/to/.ssh/authorized_keys\n" +
+          "example: cat ./" + documentName + " >> ~/.ssh/authorized_keys";
+      sendDocument(documentName, bufferedInputStream, caption, chatSession);
     } catch (JSchException | IOException e) {
       e.printStackTrace();
       chatSession.addResponse(e.getMessage());
