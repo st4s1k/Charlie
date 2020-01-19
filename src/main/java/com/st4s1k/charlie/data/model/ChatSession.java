@@ -10,10 +10,8 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.function.Consumer;
 
 import static com.jcraft.jsch.KeyPair.RSA;
-import static com.st4s1k.charlie.service.CharlieService.HOME;
 import static com.st4s1k.charlie.service.CharlieService.createFile;
 import static java.util.Objects.nonNull;
 import static lombok.AccessLevel.NONE;
@@ -49,7 +47,7 @@ public class ChatSession {
     this.dotSsh = dotSsh;
     this.charlie = charlie;
     this.jsch = jsch;
-    this.currentDir = HOME;
+    this.currentDir = "~";
     this.responseBuffer = new StringBuilder();
   }
 
@@ -75,13 +73,18 @@ public class ChatSession {
     return responseBuffer.length() > 0;
   }
 
-  public void runSftp(Consumer<ChannelSftp> sftpRunner) throws JSchException {
-    final var session = getSession();
-    session.connect();
-    final var sftp = (ChannelSftp) session.openChannel("sftp");
-    sftp.connect();
-    sftpRunner.accept(sftp);
-    sftp.exit();
+  public void runSftp(ThrowingConsumer<ChannelSftp> sftpRunner) {
+    try {
+      final var session = getSession();
+      session.connect();
+      final var sftp = (ChannelSftp) session.openChannel("sftp");
+      sftp.connect();
+      sftpRunner.accept(sftp);
+      sftp.exit();
+    } catch (Exception e) {
+      e.printStackTrace();
+      addResponse(e.getMessage());
+    }
   }
 
   public String sendCommand(String command) throws JSchException, IOException {
@@ -133,7 +136,7 @@ public class ChatSession {
 
   @PreDestroy
   public void reset() {
-    currentDir = HOME;
+    currentDir = "~";
     receivedMessage = null;
     userName = null;
     hostName = null;
