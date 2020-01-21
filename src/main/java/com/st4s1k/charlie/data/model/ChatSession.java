@@ -78,10 +78,10 @@ public class ChatSession {
     Session session = null;
     try {
       session = jsch.getSession(userName, hostName, port);
-      session.connect();
       if (nonNull(password)) {
         session.setPassword(password);
       }
+      session.connect();
       operation.accept(session);
     } catch (Exception e) {
       e.printStackTrace();
