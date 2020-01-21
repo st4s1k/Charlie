@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Optional;
 
 import static com.jcraft.jsch.KeyPair.RSA;
 import static com.st4s1k.charlie.service.CharlieService.createFile;
@@ -73,48 +74,58 @@ public class ChatSession {
     return responseBuffer.length() > 0;
   }
 
-  public void runSftp(ThrowingConsumer<ChannelSftp> sftpRunner) {
+  private void runSession(ThrowingConsumer<Session> operation) {
+    Session session = null;
     try {
-      final var session = getSession();
+      session = jsch.getSession(userName, hostName, port);
       session.connect();
-      final var sftp = (ChannelSftp) session.openChannel("sftp");
-      sftp.connect();
-      sftpRunner.accept(sftp);
-      sftp.exit();
+      if (nonNull(password)) {
+        session.setPassword(password);
+      }
+      operation.accept(session);
     } catch (Exception e) {
       e.printStackTrace();
       addResponse(e.getMessage());
+    } finally {
+      Optional.ofNullable(session)
+          .ifPresent(Session::disconnect);
     }
   }
 
-  public String sendCommand(String command) throws JSchException, IOException {
-    final var session = getSession();
-    session.connect();
-
-    final var exec = (ChannelExec) session.openChannel("exec");
-    final var outputBuffer = new StringBuilder();
-    final var commandOutput = exec.getInputStream();
-
-    exec.setCommand(command);
-    exec.connect(TIMEOUT);
-
-    var readByte = commandOutput.read();
-    while (readByte != 0xffffffff) {
-      outputBuffer.append((char) readByte);
-      readByte = commandOutput.read();
-    }
-
-    exec.disconnect();
-    session.disconnect();
-    return outputBuffer.toString();
+  public void sendCommand(String command) {
+    runSession(session -> {
+      ChannelExec exec = null;
+      try {
+        exec = (ChannelExec) session.openChannel("exec");
+        final var outputBuffer = new StringBuilder();
+        final var commandOutput = exec.getInputStream();
+        exec.setCommand(command);
+        exec.connect(TIMEOUT);
+        var readByte = commandOutput.read();
+        while (readByte != 0xffffffff) {
+          outputBuffer.append((char) readByte);
+          readByte = commandOutput.read();
+        }
+        addResponse(outputBuffer.toString());
+      } finally {
+        Optional.ofNullable(exec)
+            .ifPresent(Channel::disconnect);
+      }
+    });
   }
 
-  private Session getSession() throws JSchException {
-    final var session = jsch.getSession(userName, hostName, port);
-    if (nonNull(password)) {
-      session.setPassword(password);
-    }
-    return session;
+  public void runSftp(ThrowingConsumer<ChannelSftp> sftpRunner) {
+    runSession(session -> {
+      ChannelSftp sftp = null;
+      try {
+        sftp = (ChannelSftp) session.openChannel("sftp");
+        sftp.connect();
+        sftpRunner.accept(sftp);
+      } finally {
+        Optional.ofNullable(sftp)
+            .ifPresent(ChannelSftp::exit);
+      }
+    });
   }
 
   public void genKeyPair()

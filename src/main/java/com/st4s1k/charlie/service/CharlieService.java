@@ -85,13 +85,8 @@ public class CharlieService {
   public void executeCommand(
       final String command,
       final ChatSession chatSession) {
-    try {
-      chatSession.addResponse(chatSession
-          .sendCommand("cd " + chatSession.getCurrentDir() + " && " + command));
-    } catch (JSchException | IOException e) {
-      e.printStackTrace();
-      chatSession.addResponse(e.getMessage());
-    }
+    chatSession.sendCommand("cd " + chatSession.getCurrentDir()
+        + " && " + command);
   }
 
   public void parse(final ChatSession chatSession) {
