@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import javax.annotation.PreDestroy;
@@ -61,10 +62,24 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
 
         CompletableFuture
             .runAsync(() -> charlieService.parse(chatSession))
-            .thenRun(() -> charlieService.sendResponse(chatSession));
+            .thenRun(() -> sendResponse(chatSession));
       }
     } catch (Throwable e) {
       e.printStackTrace();
+    }
+  }
+
+  public void sendResponse(final ChatSession chatSession) {
+    if (chatSession.responseExists()) {
+      final var sendMessageRequest = new SendMessage()
+          .setChatId(chatSession.getChatId())
+          .setText(chatSession.getResponse());
+      try {
+        chatSession.getCharlie().execute(sendMessageRequest);
+      } catch (Exception e) {
+        e.printStackTrace();
+        chatSession.addResponse(e.getMessage());
+      }
     }
   }
 

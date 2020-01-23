@@ -97,15 +97,49 @@ public class ChatSession {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
+        exec.setCommand(command);
+
         final var outputBuffer = new StringBuilder();
         final var commandOutput = exec.getInputStream();
-        exec.setCommand(command);
+
         exec.connect(TIMEOUT);
+
         var readByte = commandOutput.read();
         while (readByte != 0xffffffff) {
           outputBuffer.append((char) readByte);
           readByte = commandOutput.read();
         }
+
+        addResponse(outputBuffer.toString());
+      } finally {
+        Optional.ofNullable(exec)
+            .ifPresent(Channel::disconnect);
+      }
+    });
+  }
+
+  public void sendSudoCommand(String command) {
+    runSession(session -> {
+      ChannelExec exec = null;
+      try {
+        exec = (ChannelExec) session.openChannel("exec");
+        exec.setCommand("sudo -S -p '' sh -c \"" + command + "\"");
+
+        final var outputBuffer = new StringBuilder();
+        final var commandOutput = exec.getInputStream();
+        final var outputStream = exec.getOutputStream();
+
+        exec.connect(TIMEOUT);
+
+        outputStream.write((password + "\n").getBytes());
+        outputStream.flush();
+
+        var readByte = commandOutput.read();
+        while (readByte != 0xffffffff) {
+          outputBuffer.append((char) readByte);
+          readByte = commandOutput.read();
+        }
+
         addResponse(outputBuffer.toString());
       } finally {
         Optional.ofNullable(exec)
