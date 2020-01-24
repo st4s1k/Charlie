@@ -113,13 +113,15 @@ public class CharlieService {
         + "/sudo <command> - execute command as sudo (requires password set)"
         + "\n\n"
         + "/keyauth - generate RSA key pair and automatically set public key"
-        + " on remote SSH server appending it to ~/.ssh/authorized_keys file,"
-        + " and then forget remote user password value"
+        + " on remote SSH server appending it to ~/.ssh/authorized_keys file"
         + "\n\n"
         + "/cd <directory> - regular \"cd\" command doesn't work,"
+        + " because this SSH client runs a single command in a single session,"
+        + " and the information about current directory is stored in a variable"
+        + " associated with a specific telegram chat-user pair,"
         + " so this is a workaround"
         + "\n\n"
-        + "/pwd - shows the directory from which commands will be executed"
+        + "/pwd - shows the value of the current directory variable"
         + "\n\n"
         + "/download <file_path> - download file from remote server into chat"
         + "\n\n"
@@ -240,7 +242,6 @@ public class CharlieService {
       final var home = sftp.getHome();
       final var authorizedKeysPath = home + "/.ssh/authorized_keys";
       sftp.put(fileInputStream, authorizedKeysPath, APPEND);
-      chatSession.setPassword(null);
     });
   }
 
