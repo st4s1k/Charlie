@@ -5,7 +5,7 @@ import com.st4s1k.charlie.service.CharlieTelegramBot;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.Update;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
@@ -14,7 +14,6 @@ import java.util.Optional;
 
 import static com.jcraft.jsch.KeyPair.RSA;
 import static com.st4s1k.charlie.service.CharlieService.createFile;
-import static java.util.Objects.nonNull;
 import static lombok.AccessLevel.NONE;
 
 @Data
@@ -31,7 +30,7 @@ public class ChatSession {
 
   @Getter(NONE)
   private StringBuilder responseBuffer;
-  private Message receivedMessage;
+  private Update update;
   private String currentDir;
   private String password;
   private String publicKeyPath;
@@ -78,9 +77,8 @@ public class ChatSession {
     Session session = null;
     try {
       session = jsch.getSession(userName, hostName, port);
-      if (nonNull(password)) {
-        session.setPassword(password);
-      }
+      Optional.ofNullable(password)
+          .ifPresent(session::setPassword);
       session.connect();
       operation.accept(session);
     } catch (Exception e) {
@@ -105,7 +103,7 @@ public class ChatSession {
         exec.connect(TIMEOUT);
 
         var readByte = commandOutput.read();
-        while (readByte != 0xffffffff) {
+        while (readByte != -1) {
           outputBuffer.append((char) readByte);
           readByte = commandOutput.read();
         }
@@ -124,22 +122,17 @@ public class ChatSession {
       try {
         exec = (ChannelExec) session.openChannel("exec");
         exec.setCommand("sudo -S -p '' sh -c \"" + command + "\"");
-
         final var outputBuffer = new StringBuilder();
         final var commandOutput = exec.getInputStream();
         final var outputStream = exec.getOutputStream();
-
         exec.connect(TIMEOUT);
-
         outputStream.write((password + "\n").getBytes());
         outputStream.flush();
-
         var readByte = commandOutput.read();
-        while (readByte != 0xffffffff) {
+        while (readByte != -1) {
           outputBuffer.append((char) readByte);
           readByte = commandOutput.read();
         }
-
         addResponse(outputBuffer.toString());
       } finally {
         Optional.ofNullable(exec)
@@ -166,23 +159,20 @@ public class ChatSession {
       throws JSchException, IOException {
     final var file = dotSsh + "/id_rsa_" + userName + "_" + hostName;
     final var keyPair = KeyPair.genKeyPair(jsch, RSA);
-
     createFile(file);
     keyPair.writePrivateKey(file);
     publicKeyPath = file + ".pub";
-
     final var charlieUserName = System.getProperty("user.name");
     final var charlieHostName = InetAddress.getLocalHost().getHostName();
     keyPair.writePublicKey(publicKeyPath, charlieUserName + "@" + charlieHostName);
     keyPair.dispose();
-
     jsch.addIdentity(file);
   }
 
   @PreDestroy
   public void reset() {
     currentDir = "~";
-    receivedMessage = null;
+    update = null;
     userName = null;
     hostName = null;
     password = null;

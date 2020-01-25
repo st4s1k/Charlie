@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.io.*;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static com.jcraft.jsch.ChannelSftp.APPEND;
+import static java.lang.Integer.*;
 
 @Service
 @RequiredArgsConstructor
@@ -45,17 +47,28 @@ public class CharlieService {
   private final Map<Predicate<String>, Consumer<ChatSession>> operations = new HashMap<>();
 
   {
-    operations.put(msg -> msg.matches("^/start$"), this::showStartMessage);
-    operations.put(msg -> msg.matches("^/help$"), this::showHelpMessage);
-    operations.put(msg -> msg.matches("^/ci\\s+.+$"), this::parseConnectionInfo);
-    operations.put(msg -> msg.matches("^/password\\s+.+$"), this::setPassword);
-    operations.put(msg -> msg.matches("^/keygen$"), this::keyGen);
-    operations.put(msg -> msg.matches("^/sudo\\s+.+$"), this::executeSudoCommand);
-    operations.put(msg -> msg.matches("^/keyauth$"), this::switchToKeyAuthMode);
-    operations.put(msg -> msg.matches("^/cd\\s+.+$"), this::cd);
-    operations.put(msg -> msg.matches("^/pwd$"), this::pwd);
-    operations.put(msg -> msg.matches("^/download\\s+.+$"), this::downloadAndSendDocumentToChat);
-    operations.put(msg -> msg.matches("^/reset$"), this::reset);
+    operations.put(msg -> msg.matches("^/start$"),
+        this::showStartMessage);
+    operations.put(msg -> msg.matches("^/help$"),
+        this::showHelpMessage);
+    operations.put(msg -> msg.matches("^/ci\\s+.+$"),
+        this::parseConnectionInfo);
+    operations.put(msg -> msg.matches("^/password\\s+.+$"),
+        this::setPassword);
+    operations.put(msg -> msg.matches("^/keygen$"),
+        this::keyGen);
+    operations.put(msg -> msg.matches("^/sudo\\s+.+$"),
+        this::executeSudoCommand);
+    operations.put(msg -> msg.matches("^/keyauth$"),
+        this::switchToKeyAuthMode);
+    operations.put(msg -> msg.matches("^/cd\\s+.+$"),
+        this::cd);
+    operations.put(msg -> msg.matches("^/pwd$"),
+        this::pwd);
+    operations.put(msg -> msg.matches("^/download\\s+.+$"),
+        this::downloadAndSendDocumentToChat);
+    operations.put(msg -> msg.matches("^/reset$"),
+        this::reset);
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -86,18 +99,30 @@ public class CharlieService {
 
   private void showStartMessage(final ChatSession chatSession) {
     final var name = chatSession.getId().getUser().getFirstName();
-    chatSession.addResponse("Hello, " + name + ", I'm Charlie!\n\n"
+    chatSession.addResponse("Hello, " + name + ", I'm Charlie!"
+        + "\n\n"
         + "A telegram bot SSH client.\n"
-        + "Type /help, to get a list of available commands.\n\n"
+        + "Use /help command, to get a list of available commands."
+        + "\n\n"
         + "To connect to a server using password:\n"
         + "1. /ci <user>@<host>:<port>\n"
-        + "2. /password <password>\n\n"
+        + "2. /password <password>"
+        + "\n\n"
         + "To connect to a server using RSA key pair:\n"
         + "1. /ci <user>@<host>:<port>\n"
         + "2. /keygen\n"
         + "3. append obtained public key file content to authorized_keys\n"
-        + " (ex: cat id_rsa_charlie.pub >> ~/.ssh/authorized_keys)\n\n"
+        + " (ex: cat id_rsa_charlie.pub >> ~/.ssh/authorized_keys)"
+        + "\n\n"
         + "To execute a remote command, type anything without a leading forward slash \"/\""
+        + "\n\n"
+        + "Be aware, that this bot is running on https://www.heroku.com/ ,"
+        + " that means that, the machine on which this bot is running"
+        + " may reboot once in a while, erasing all files stored locally,"
+        + " including generated RSA keys."
+        + "\n\n"
+        + "The code for this bot is open-source:"
+        + "https://github.com/st4s1k/Charlie"
     );
   }
 
@@ -177,7 +202,9 @@ public class CharlieService {
 
   private String getReceivedText(final ChatSession chatSession) {
     return Optional.of(chatSession)
-        .map(ChatSession::getReceivedMessage)
+        .map(ChatSession::getUpdate)
+        .filter(Update::hasMessage)
+        .map(Update::getMessage)
         .filter(Message::hasText)
         .map(Message::getText).orElse("");
   }
@@ -191,7 +218,7 @@ public class CharlieService {
       final var port = hostInfo.substring(hostInfo.indexOf(':') + 1);
       chatSession.setUserName(userName);
       chatSession.setHostName(hostName);
-      chatSession.setPort(Integer.parseInt(port));
+      chatSession.setPort(parseInt(port));
       chatSession.addResponse("[User info is set]\n");
     } else {
       chatSession.addResponse("[Invalid user info format]");

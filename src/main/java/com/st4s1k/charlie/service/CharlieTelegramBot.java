@@ -47,19 +47,14 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
   public void onUpdateReceived(final Update update) {
     try {
       if (update.hasMessage() && update.getMessage().hasText()) {
-
         final var message = update.getMessage();
         final var chat = message.getChat();
         final var user = message.getFrom();
         final var chatSessionId = new ChatSessionId(chat, user);
-
         sessions.computeIfAbsent(chatSessionId, id ->
             new ChatSession(id, dotSsh, this, jsch));
-
         final var chatSession = sessions.get(chatSessionId);
-
-        chatSession.setReceivedMessage(message);
-
+        chatSession.setUpdate(update);
         CompletableFuture
             .runAsync(() -> charlieService.parse(chatSession))
             .thenRun(() -> sendResponse(chatSession));
