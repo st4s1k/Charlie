@@ -4,17 +4,22 @@ import com.jcraft.jsch.*;
 import com.st4s1k.charlie.service.CharlieTelegramBot;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static com.jcraft.jsch.KeyPair.RSA;
 import static com.st4s1k.charlie.service.CharlieService.createFile;
-import static lombok.AccessLevel.NONE;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.System.getProperty;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -27,9 +32,8 @@ public class ChatSession {
   private final String dotSsh;
   private final CharlieTelegramBot charlie;
   private final JSch jsch;
+  private final Set<CompletableFuture<Void>> tasks;
 
-  @Getter(NONE)
-  private StringBuilder responseBuffer;
   private Update update;
   private String currentDir;
   private String password;
@@ -48,32 +52,18 @@ public class ChatSession {
     this.charlie = charlie;
     this.jsch = jsch;
     this.currentDir = "~";
-    this.responseBuffer = new StringBuilder();
+    this.tasks = new HashSet<>();
   }
 
   public Long getChatId() {
     return id.getChat().getId();
   }
 
-  public void addResponse(final String response) {
-    responseBuffer.append(response);
+  public void killAllTasks() {
+    tasks.forEach(cf -> cf.complete(null));
   }
 
-  public String getResponse() {
-    final var response = responseBuffer.toString();
-    clearResponseBuffer();
-    return response;
-  }
-
-  public void clearResponseBuffer() {
-    responseBuffer.delete(0, responseBuffer.length());
-  }
-
-  public boolean responseExists() {
-    return responseBuffer.length() > 0;
-  }
-
-  private void runSession(ThrowingConsumer<Session> operation) {
+  private void runSession(final ThrowingConsumer<Session> operation) {
     Session session = null;
     try {
       session = jsch.getSession(userName, hostName, port);
@@ -83,37 +73,69 @@ public class ChatSession {
       operation.accept(session);
     } catch (Exception e) {
       e.printStackTrace();
-      addResponse(e.getMessage());
+      sendResponse(e.getMessage());
     } finally {
       Optional.ofNullable(session)
           .ifPresent(Session::disconnect);
     }
   }
 
+  public void sendResponse(final String response) {
+    final var sendMessageRequest = new SendMessage()
+        .setChatId(getChatId())
+        .setText(response);
+    try {
+      charlie.execute(sendMessageRequest);
+    } catch (Exception e) {
+      e.printStackTrace();
+      sendResponse(e.getMessage());
+    }
+  }
+
+  private void executeAsync(final ThrowingRunnable operation) {
+    tasks.add(CompletableFuture.runAsync(() -> {
+      try {
+        operation.run();
+      } catch (Exception e) {
+        e.printStackTrace();
+        sendResponse(e.getMessage());
+      }
+    }));
+  }
+
+  private void processCommandOutput(final InputStream commandOutput)
+      throws IOException {
+    final var outputBuffer = new StringBuilder();
+    var readByte = commandOutput.read();
+    var start = currentTimeMillis();
+    while (readByte != -1) {
+      outputBuffer.append((char) readByte);
+      if ((currentTimeMillis() - start) > 5000 && readByte == '\n') {
+        start = currentTimeMillis();
+        sendResponse(outputBuffer.toString());
+        outputBuffer.delete(0, outputBuffer.length());
+      }
+      readByte = commandOutput.read();
+    }
+    if (outputBuffer.length() > 0) {
+      sendResponse(outputBuffer.toString());
+    }
+  }
+
   public void sendCommand(String command) {
-    runSession(session -> {
+    executeAsync(() -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
         exec.setCommand(command);
-
-        final var outputBuffer = new StringBuilder();
         final var commandOutput = exec.getInputStream();
-
         exec.connect(TIMEOUT);
-
-        var readByte = commandOutput.read();
-        while (readByte != -1) {
-          outputBuffer.append((char) readByte);
-          readByte = commandOutput.read();
-        }
-
-        addResponse(outputBuffer.toString());
+        processCommandOutput(commandOutput);
       } finally {
         Optional.ofNullable(exec)
             .ifPresent(Channel::disconnect);
       }
-    });
+    }));
   }
 
   public void sendSudoCommand(String command) {
@@ -122,18 +144,12 @@ public class ChatSession {
       try {
         exec = (ChannelExec) session.openChannel("exec");
         exec.setCommand("sudo -S -p '' sh -c \"" + command + "\"");
-        final var outputBuffer = new StringBuilder();
         final var commandOutput = exec.getInputStream();
         final var outputStream = exec.getOutputStream();
         exec.connect(TIMEOUT);
         outputStream.write((password + "\n").getBytes());
         outputStream.flush();
-        var readByte = commandOutput.read();
-        while (readByte != -1) {
-          outputBuffer.append((char) readByte);
-          readByte = commandOutput.read();
-        }
-        addResponse(outputBuffer.toString());
+        processCommandOutput(commandOutput);
       } finally {
         Optional.ofNullable(exec)
             .ifPresent(Channel::disconnect);
@@ -162,7 +178,7 @@ public class ChatSession {
     createFile(file);
     keyPair.writePrivateKey(file);
     publicKeyPath = file + ".pub";
-    final var charlieUserName = System.getProperty("user.name");
+    final var charlieUserName = getProperty("user.name");
     final var charlieHostName = InetAddress.getLocalHost().getHostName();
     keyPair.writePublicKey(publicKeyPath, charlieUserName + "@" + charlieHostName);
     keyPair.dispose();

@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static com.jcraft.jsch.ChannelSftp.APPEND;
-import static java.lang.Integer.*;
+import static java.lang.Integer.parseInt;
 
 @Service
 @RequiredArgsConstructor
@@ -69,6 +69,8 @@ public class CharlieService {
         this::downloadAndSendDocumentToChat);
     operations.put(msg -> msg.matches("^/reset$"),
         this::reset);
+    operations.put(msg -> msg.matches("^/killall$"),
+        this::killAll);
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -99,7 +101,7 @@ public class CharlieService {
 
   private void showStartMessage(final ChatSession chatSession) {
     final var name = chatSession.getId().getUser().getFirstName();
-    chatSession.addResponse("Hello, " + name + ", I'm Charlie!"
+    chatSession.sendResponse("Hello, " + name + ", I'm Charlie!"
         + "\n\n"
         + "A telegram bot SSH client.\n"
         + "Use /help command, to get a list of available commands."
@@ -127,7 +129,7 @@ public class CharlieService {
   }
 
   private void showHelpMessage(final ChatSession chatSession) {
-    chatSession.addResponse("/help - display current message"
+    chatSession.sendResponse("/help - display current message"
         + "\n\n"
         + "/ci <user>@<host>:<port> - set connection info"
         + "\n\n"
@@ -197,7 +199,7 @@ public class CharlieService {
         .filter(e -> e.getKey().test(getReceivedText(chatSession)))
         .findFirst()
         .ifPresentOrElse(e -> e.getValue().accept(chatSession),
-            () -> chatSession.addResponse("Unknown command ..."));
+            () -> chatSession.sendResponse("Unknown command ..."));
   }
 
   private String getReceivedText(final ChatSession chatSession) {
@@ -219,9 +221,9 @@ public class CharlieService {
       chatSession.setUserName(userName);
       chatSession.setHostName(hostName);
       chatSession.setPort(parseInt(port));
-      chatSession.addResponse("[User info is set]\n");
+      chatSession.sendResponse("[User info is set]\n");
     } else {
-      chatSession.addResponse("[Invalid user info format]");
+      chatSession.sendResponse("[Invalid user info format]");
     }
   }
 
@@ -238,19 +240,21 @@ public class CharlieService {
       chatSession.getCharlie().execute(sendDocumentRequest);
     } catch (Exception e) {
       e.printStackTrace();
-      chatSession.addResponse(e.getMessage());
+      chatSession.sendResponse(e.getMessage());
     }
   }
 
   private void pwd(final ChatSession chatSession) {
-    chatSession.addResponse(chatSession.getCurrentDir());
+    chatSession.sendResponse(chatSession.getCurrentDir());
   }
 
   private void cd(final ChatSession chatSession) {
     final var dir = getReceivedText(chatSession)
         .replaceFirst("^/cd\\s+", "");
-    executeCommand("cd " + dir + " && pwd", chatSession);
-    chatSession.setCurrentDir(chatSession.getResponse().trim());
+    chatSession.runSftp(channelSftp -> {
+      channelSftp.cd(dir);
+      chatSession.setCurrentDir(channelSftp.pwd());
+    });
     executeCommand("ls", chatSession);
   }
 
@@ -258,7 +262,7 @@ public class CharlieService {
     final var password = getReceivedText(chatSession)
         .replaceFirst("^/password\\s+", "");
     chatSession.setPassword(password);
-    chatSession.addResponse("[Password set]");
+    chatSession.sendResponse("[Password set]");
   }
 
   private void switchToKeyAuthMode(final ChatSession chatSession) {
@@ -285,12 +289,16 @@ public class CharlieService {
       sendDocument(documentName, bufferedInputStream, caption, chatSession);
     } catch (JSchException | IOException e) {
       e.printStackTrace();
-      chatSession.addResponse(e.getMessage());
+      chatSession.sendResponse(e.getMessage());
     }
+  }
+
+  private void killAll(final ChatSession chatSession) {
+    chatSession.killAllTasks();
   }
 
   private void reset(final ChatSession chatSession) {
     chatSession.reset();
-    chatSession.addResponse("[User info cleared]");
+    chatSession.sendResponse("[User info cleared]");
   }
 }
