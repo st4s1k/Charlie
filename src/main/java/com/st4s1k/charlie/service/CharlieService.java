@@ -4,11 +4,13 @@ import com.jcraft.jsch.JSchException;
 import com.st4s1k.charlie.data.model.ChatSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -129,7 +131,8 @@ public class CharlieService {
   }
 
   private void showHelpMessage(final ChatSession chatSession) {
-    chatSession.sendResponse("/help - display current message"
+    chatSession.sendResponse(""
+        + "/help - display current message"
         + "\n\n"
         + "/ci <user>@<host>:<port> - set connection info"
         + "\n\n"
@@ -154,6 +157,8 @@ public class CharlieService {
         + "\n\n"
         + "/reset - reset connection info"
         + "\n\n"
+        + "/killall - kill all running tasks"
+        + "\n\n"
         + "<command> - execute command on remote SSH server"
     );
   }
@@ -165,7 +170,7 @@ public class CharlieService {
       sftp.cd(chatSession.getCurrentDir() + "/");
       final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/') + 1);
       final var inputStream = sftp.get(remoteFilePath);
-      sendDocument(fileName, inputStream, fileName, chatSession);
+      chatSession.sendDocument(fileName, inputStream, fileName);
     });
   }
 
@@ -227,23 +232,6 @@ public class CharlieService {
     }
   }
 
-  private void sendDocument(
-      final String documentName,
-      final InputStream inputStream,
-      final String caption,
-      final ChatSession chatSession) {
-    final var sendDocumentRequest = new SendDocument()
-        .setChatId(chatSession.getChatId())
-        .setDocument(documentName, inputStream)
-        .setCaption(caption);
-    try {
-      chatSession.getCharlie().execute(sendDocumentRequest);
-    } catch (Exception e) {
-      e.printStackTrace();
-      chatSession.sendResponse(e.getMessage());
-    }
-  }
-
   private void pwd(final ChatSession chatSession) {
     chatSession.sendResponse(chatSession.getCurrentDir());
   }
@@ -286,8 +274,8 @@ public class CharlieService {
       final var caption = "Execute this command on the remote ssh server:\n" +
           "cat /path/to/" + documentName + " >> /path/to/.ssh/authorized_keys\n" +
           "example: cat ./" + documentName + " >> ~/.ssh/authorized_keys";
-      sendDocument(documentName, bufferedInputStream, caption, chatSession);
-    } catch (JSchException | IOException e) {
+      chatSession.sendDocument(documentName, bufferedInputStream, caption);
+    } catch (final JSchException | IOException e) {
       e.printStackTrace();
       chatSession.sendResponse(e.getMessage());
     }

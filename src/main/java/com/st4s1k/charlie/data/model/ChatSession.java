@@ -4,6 +4,7 @@ import com.jcraft.jsch.*;
 import com.st4s1k.charlie.service.CharlieTelegramBot;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -14,12 +15,12 @@ import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 import static com.jcraft.jsch.KeyPair.RSA;
 import static com.st4s1k.charlie.service.CharlieService.createFile;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -32,7 +33,7 @@ public class ChatSession {
   private final String dotSsh;
   private final CharlieTelegramBot charlie;
   private final JSch jsch;
-  private final Set<CompletableFuture<Void>> tasks;
+  private final Set<Task> tasks;
 
   private Update update;
   private String currentDir;
@@ -60,7 +61,7 @@ public class ChatSession {
   }
 
   public void killAllTasks() {
-    tasks.forEach(cf -> cf.complete(null));
+    tasks.forEach(Task::stop);
   }
 
   private void runSession(final ThrowingConsumer<Session> operation) {
@@ -71,7 +72,7 @@ public class ChatSession {
           .ifPresent(session::setPassword);
       session.connect();
       operation.accept(session);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       sendResponse(e.getMessage());
     } finally {
@@ -86,29 +87,36 @@ public class ChatSession {
         .setText(response);
     try {
       charlie.execute(sendMessageRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       sendResponse(e.getMessage());
     }
   }
 
-  private void executeAsync(final ThrowingRunnable operation) {
-    tasks.add(CompletableFuture.runAsync(() -> {
-      try {
-        operation.run();
-      } catch (Exception e) {
-        e.printStackTrace();
-        sendResponse(e.getMessage());
-      }
-    }));
+  public void sendDocument(
+      final String documentName,
+      final InputStream inputStream,
+      final String caption) {
+    final var sendDocumentRequest = new SendDocument()
+        .setChatId(getChatId())
+        .setDocument(documentName, inputStream)
+        .setCaption(caption);
+    try {
+      charlie.execute(sendDocumentRequest);
+    } catch (final Exception e) {
+      e.printStackTrace();
+      sendResponse(e.getMessage());
+    }
   }
 
-  private void processCommandOutput(final InputStream commandOutput)
+  private void processCommandOutput(
+      final InputStream commandOutput,
+      final Task task)
       throws IOException {
     final var outputBuffer = new StringBuilder();
     var readByte = commandOutput.read();
     var start = currentTimeMillis();
-    while (readByte != -1) {
+    while (!task.cancelled() && readByte != -1) {
       outputBuffer.append((char) readByte);
       if ((currentTimeMillis() - start) > 5000 && readByte == '\n') {
         start = currentTimeMillis();
@@ -122,15 +130,26 @@ public class ChatSession {
     }
   }
 
+  private void executeAsync(final ThrowingConsumer<Task> operation) {
+    tasks.add(new Task(task -> runAsync(() -> {
+      try {
+        operation.accept(task);
+      } catch (final Exception e) {
+        e.printStackTrace();
+        sendResponse(e.getMessage());
+      }
+    })));
+  }
+
   public void sendCommand(String command) {
-    executeAsync(() -> runSession(session -> {
+    executeAsync(task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
         exec.setCommand(command);
         final var commandOutput = exec.getInputStream();
         exec.connect(TIMEOUT);
-        processCommandOutput(commandOutput);
+        processCommandOutput(commandOutput, task);
       } finally {
         Optional.ofNullable(exec)
             .ifPresent(Channel::disconnect);
@@ -138,8 +157,8 @@ public class ChatSession {
     }));
   }
 
-  public void sendSudoCommand(String command) {
-    runSession(session -> {
+  public void sendSudoCommand(final String command) {
+    executeAsync(task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
@@ -149,12 +168,12 @@ public class ChatSession {
         exec.connect(TIMEOUT);
         outputStream.write((password + "\n").getBytes());
         outputStream.flush();
-        processCommandOutput(commandOutput);
+        processCommandOutput(commandOutput, task);
       } finally {
         Optional.ofNullable(exec)
             .ifPresent(Channel::disconnect);
       }
-    });
+    }));
   }
 
   public void runSftp(ThrowingConsumer<ChannelSftp> sftpRunner) {
