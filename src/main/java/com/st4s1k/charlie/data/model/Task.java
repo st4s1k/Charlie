@@ -3,7 +3,6 @@ package com.st4s1k.charlie.data.model;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -15,16 +14,22 @@ import static lombok.AccessLevel.NONE;
 public class Task {
 
   @EqualsAndHashCode.Include
-  private final UUID id = UUID.randomUUID();
+  private final Integer id;
+  private final String name;
   @Getter(NONE)
   private final AtomicBoolean cancelled = new AtomicBoolean(false);
   private final CompletableFuture<Void> future;
 
-  public Task(final Function<Task, CompletableFuture<Void>> operation) {
+  public Task(
+      final Integer id,
+      final String name,
+      final Function<Task, CompletableFuture<Void>> operation) {
+    this.id = id;
+    this.name = name;
     this.future = operation.apply(this);
   }
 
-  public boolean cancelled() {
+  public boolean isCancelled() {
     return cancelled.get();
   }
 

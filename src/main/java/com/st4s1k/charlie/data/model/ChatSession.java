@@ -12,14 +12,15 @@ import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.jcraft.jsch.KeyPair.RSA;
 import static com.st4s1k.charlie.service.CharlieService.createFile;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
+import static java.util.Objects.nonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Data
@@ -33,7 +34,7 @@ public class ChatSession {
   private final String dotSsh;
   private final CharlieTelegramBot charlie;
   private final JSch jsch;
-  private final Set<Task> tasks;
+  private final Map<Integer, Task> tasks;
 
   private Update update;
   private String currentDir;
@@ -53,7 +54,7 @@ public class ChatSession {
     this.charlie = charlie;
     this.jsch = jsch;
     this.currentDir = "~";
-    this.tasks = new HashSet<>();
+    this.tasks = new HashMap<>();
   }
 
   public Long getChatId() {
@@ -61,7 +62,15 @@ public class ChatSession {
   }
 
   public void killAllTasks() {
-    tasks.forEach(Task::stop);
+    tasks.values().forEach(Task::stop);
+  }
+
+  public void killTask(final int id) {
+    if (tasks.containsKey(id)) {
+      tasks.get(id).stop();
+    } else {
+      sendResponse("Task with id [" + id + "] doesn't exist.");
+    }
   }
 
   private void runSession(final ThrowingConsumer<Session> operation) {
@@ -82,14 +91,16 @@ public class ChatSession {
   }
 
   public void sendResponse(final String response) {
-    final var sendMessageRequest = new SendMessage()
-        .setChatId(getChatId())
-        .setText(response);
-    try {
-      charlie.execute(sendMessageRequest);
-    } catch (final Exception e) {
-      e.printStackTrace();
-      sendResponse(e.getMessage());
+    if (nonNull(response) && !response.isBlank()) {
+      final var sendMessageRequest = new SendMessage()
+          .setChatId(getChatId())
+          .setText(response);
+      try {
+        charlie.execute(sendMessageRequest);
+      } catch (final Exception e) {
+        e.printStackTrace();
+        sendResponse(e.getMessage());
+      }
     }
   }
 
@@ -116,7 +127,7 @@ public class ChatSession {
     final var outputBuffer = new StringBuilder();
     var readByte = commandOutput.read();
     var start = currentTimeMillis();
-    while (!task.cancelled() && readByte != -1) {
+    while (!task.isCancelled() && readByte != -1) {
       outputBuffer.append((char) readByte);
       if ((currentTimeMillis() - start) > 5000 && readByte == '\n') {
         start = currentTimeMillis();
@@ -130,19 +141,37 @@ public class ChatSession {
     }
   }
 
-  private void executeAsync(final ThrowingConsumer<Task> operation) {
-    tasks.add(new Task(task -> runAsync(() -> {
+  private int getNewTaskId() {
+    int taskId = tasks.size() + 1;
+    for (int i = 0; i < tasks.size() + 1; i++) {
+      if (!tasks.containsKey(i)) {
+        taskId = i;
+        break;
+      }
+    }
+    return taskId;
+  }
+
+  private void executeAsync(
+      final String taskName,
+      final ThrowingConsumer<Task> operation) {
+    final var taskId = getNewTaskId();
+    tasks.put(taskId, new Task(taskId, taskName, _task -> runAsync(() -> {
+      sendResponse("Task with id: " + taskId + " [started]");
       try {
-        operation.accept(task);
+        operation.accept(_task);
       } catch (final Exception e) {
         e.printStackTrace();
         sendResponse(e.getMessage());
       }
+    }).thenRunAsync(() -> {
+      tasks.remove(taskId);
+      sendResponse("Task with id: " + taskId + " [stopped]");
     })));
   }
 
   public void sendCommand(String command) {
-    executeAsync(task -> runSession(session -> {
+    executeAsync(command, task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
@@ -158,7 +187,7 @@ public class ChatSession {
   }
 
   public void sendSudoCommand(final String command) {
-    executeAsync(task -> runSession(session -> {
+    executeAsync(command, task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");

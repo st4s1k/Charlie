@@ -53,7 +53,7 @@ public class CharlieService {
         this::showStartMessage);
     operations.put(msg -> msg.matches("^/help$"),
         this::showHelpMessage);
-    operations.put(msg -> msg.matches("^/ci\\s+.+$"),
+    operations.put(msg -> msg.matches("^/conn\\s+.+$"),
         this::parseConnectionInfo);
     operations.put(msg -> msg.matches("^/password\\s+.+$"),
         this::setPassword);
@@ -71,8 +71,12 @@ public class CharlieService {
         this::downloadAndSendDocumentToChat);
     operations.put(msg -> msg.matches("^/reset$"),
         this::reset);
+    operations.put(msg -> msg.matches("^/tasks$"),
+        this::showRunningTasks);
     operations.put(msg -> msg.matches("^/killall$"),
-        this::killAll);
+        this::killAllTasks);
+    operations.put(msg -> msg.matches("^/kill\\s+\\d+$"),
+        this::killTask);
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -109,11 +113,11 @@ public class CharlieService {
         + "Use /help command, to get a list of available commands."
         + "\n\n"
         + "To connect to a server using password:\n"
-        + "1. /ci <user>@<host>:<port>\n"
+        + "1. /conn <user>@<host>:<port>\n"
         + "2. /password <password>"
         + "\n\n"
         + "To connect to a server using RSA key pair:\n"
-        + "1. /ci <user>@<host>:<port>\n"
+        + "1. /conn <user>@<host>:<port>\n"
         + "2. /keygen\n"
         + "3. append obtained public key file content to authorized_keys\n"
         + " (ex: cat id_rsa_charlie.pub >> ~/.ssh/authorized_keys)"
@@ -134,7 +138,7 @@ public class CharlieService {
     chatSession.sendResponse(""
         + "/help - display current message"
         + "\n\n"
-        + "/ci <user>@<host>:<port> - set connection info"
+        + "/conn <user>@<host>:<port> - set connection info"
         + "\n\n"
         + "/password <password> - remote user password"
         + "\n\n"
@@ -157,7 +161,11 @@ public class CharlieService {
         + "\n\n"
         + "/reset - reset connection info"
         + "\n\n"
+        + "/tasks - list all running tasks"
+        + "\n\n"
         + "/killall - kill all running tasks"
+        + "\n\n"
+        + "/kill <taskId> - kill task with given ID"
         + "\n\n"
         + "<command> - execute command on remote SSH server"
     );
@@ -218,7 +226,7 @@ public class CharlieService {
 
   private void parseConnectionInfo(final ChatSession chatSession) {
     final var hostInfo = getReceivedText(chatSession)
-        .replaceFirst("^/ci\\s+", "");
+        .replaceFirst("^/conn\\s+", "");
     if (hostInfo.matches(HOST_INFO_REGEX)) {
       final var userName = hostInfo.substring(0, hostInfo.indexOf('@'));
       final var hostName = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
@@ -226,9 +234,9 @@ public class CharlieService {
       chatSession.setUserName(userName);
       chatSession.setHostName(hostName);
       chatSession.setPort(parseInt(port));
-      chatSession.sendResponse("[User info is set]\n");
+      chatSession.sendResponse("[Connection info is set]\n");
     } else {
-      chatSession.sendResponse("[Invalid user info format]");
+      chatSession.sendResponse("[Invalid connection info format]");
     }
   }
 
@@ -281,8 +289,29 @@ public class CharlieService {
     }
   }
 
-  private void killAll(final ChatSession chatSession) {
+  private void killAllTasks(final ChatSession chatSession) {
     chatSession.killAllTasks();
+  }
+
+  private void killTask(final ChatSession chatSession) {
+    final var taskId = getReceivedText(chatSession)
+        .replaceFirst("^/kill\\s+", "");
+    chatSession.killTask(Integer.parseInt(taskId));
+  }
+
+  private void showRunningTasks(final ChatSession chatSession) {
+    final var runningTasksList = chatSession.getTasks().values().stream()
+        .reduce(new StringBuilder(), (output, task) -> {
+          if (output.length() > 0) {
+            output.append("\n\n");
+          }
+          output.append(String.format(
+              "taskId: %d\ncommand: %s",
+              task.getId(), task.getName()
+          ));
+          return output;
+        }, StringBuilder::append).toString();
+    chatSession.sendResponse(runningTasksList);
   }
 
   private void reset(final ChatSession chatSession) {
