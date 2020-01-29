@@ -211,7 +211,8 @@ public class CharlieService {
     operations.entrySet().stream()
         .filter(e -> e.getKey().test(getReceivedText(chatSession)))
         .findFirst()
-        .ifPresentOrElse(e -> e.getValue().accept(chatSession),
+        .ifPresentOrElse(
+            e -> e.getValue().accept(chatSession),
             () -> chatSession.sendResponse("Unknown command ..."));
   }
 
@@ -306,7 +307,7 @@ public class CharlieService {
             output.append("\n\n");
           }
           output.append(String.format(
-              "taskId: %d\ncommand: %s",
+              "Task ID: %d\nCommand: %s",
               task.getId(), task.getName()
           ));
           return output;

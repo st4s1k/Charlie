@@ -62,14 +62,14 @@ public class ChatSession {
   }
 
   public void killAllTasks() {
-    tasks.values().forEach(Task::stop);
+    tasks.keySet().forEach(this::killTask);
   }
 
   public void killTask(final int id) {
     if (tasks.containsKey(id)) {
       tasks.get(id).stop();
     } else {
-      sendResponse("Task with id [" + id + "] doesn't exist.");
+      sendResponse("Task with given id does not exist: " + id);
     }
   }
 
