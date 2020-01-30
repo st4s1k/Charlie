@@ -61,7 +61,7 @@ public class ChatSession {
   }
 
   public void killAllTasks() {
-    tasks.keySet().forEach(this::killTask);
+    tasks.values().forEach(Task::stop);
   }
 
   public void killTask(final int id) {
@@ -100,7 +100,6 @@ public class ChatSession {
         charlie.execute(sendMessageRequest);
       } catch (final Exception e) {
         e.printStackTrace();
-        sendResponse(e.getMessage());
       }
     }
   }
@@ -123,20 +122,20 @@ public class ChatSession {
 
   private void processCommandOutput(
       final InputStream commandOutput,
-      final Task task) {
+      final Task task) throws InterruptedException {
     final var outputBuffer = new StringBuilder();
 
-    int readByte;
+    int readByte = readByte(commandOutput, task);
     long start = currentTimeMillis();
 
-    while (!((readByte = readByte(commandOutput, task)) == -1
-        || task.isCancelled())) {
+    while (!(readByte == -1 || task.isCancelled())) {
       outputBuffer.append((char) readByte);
       if ((currentTimeMillis() - start) > 5000 && readByte == '\n') {
         start = currentTimeMillis();
         sendResponse(outputBuffer.toString());
         outputBuffer.delete(0, outputBuffer.length());
       }
+      readByte = readByte(commandOutput, task);
     }
 
     if (outputBuffer.length() > 0) {
@@ -146,10 +145,11 @@ public class ChatSession {
 
   private int readByte(
       final InputStream commandOutput,
-      final Task task) {
-    final var readFuture = getAsync(commandOutput::read);
-    while (!(readFuture.isDone() || task.isCancelled())) ;
-    return readFuture.getNow(-1);
+      final Task task) throws InterruptedException {
+    final var readByteFuture = getAsync(commandOutput::read);
+    readByteFuture.thenRun(task::wake);
+    task.sleepUntil(readByteFuture::isDone);
+    return readByteFuture.getNow(-1);
   }
 
   private int getNewTaskId() {
@@ -270,4 +270,3 @@ public class ChatSession {
     port = 0;
   }
 }
-

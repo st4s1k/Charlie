@@ -6,6 +6,7 @@ import lombok.Getter;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static lombok.AccessLevel.NONE;
 
@@ -34,6 +35,21 @@ public class Task {
   }
 
   public void stop() {
+    wake();
     cancelled.set(true);
+  }
+
+  public void sleepUntil(final Supplier<Boolean> condition) throws InterruptedException {
+    synchronized (this) {
+      while (!(condition.get() || isCancelled())) {
+        wait();
+      }
+    }
+  }
+
+  public void wake() {
+    synchronized (this) {
+      notifyAll();
+    }
   }
 }
