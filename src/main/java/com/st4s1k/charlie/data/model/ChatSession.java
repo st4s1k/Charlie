@@ -14,14 +14,13 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static com.jcraft.jsch.KeyPair.RSA;
 import static com.st4s1k.charlie.service.CharlieService.createFile;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.util.Objects.nonNull;
-import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -77,16 +76,18 @@ public class ChatSession {
     Session session = null;
     try {
       session = jsch.getSession(userName, hostName, port);
-      Optional.ofNullable(password)
-          .ifPresent(session::setPassword);
+      if (nonNull(password)) {
+        session.setPassword(password);
+      }
       session.connect();
       operation.accept(session);
     } catch (final Exception e) {
       e.printStackTrace();
       sendResponse(e.getMessage());
     } finally {
-      Optional.ofNullable(session)
-          .ifPresent(Session::disconnect);
+      if (nonNull(session)) {
+        session.disconnect();
+      }
     }
   }
 
@@ -122,23 +123,33 @@ public class ChatSession {
 
   private void processCommandOutput(
       final InputStream commandOutput,
-      final Task task)
-      throws IOException {
+      final Task task) {
     final var outputBuffer = new StringBuilder();
-    var readByte = commandOutput.read();
-    var start = currentTimeMillis();
-    while (!task.isCancelled() && readByte != -1) {
+
+    int readByte;
+    long start = currentTimeMillis();
+
+    while (!((readByte = readByte(commandOutput, task)) == -1
+        || task.isCancelled())) {
       outputBuffer.append((char) readByte);
       if ((currentTimeMillis() - start) > 5000 && readByte == '\n') {
         start = currentTimeMillis();
         sendResponse(outputBuffer.toString());
         outputBuffer.delete(0, outputBuffer.length());
       }
-      readByte = commandOutput.read();
     }
+
     if (outputBuffer.length() > 0) {
       sendResponse(outputBuffer.toString());
     }
+  }
+
+  private int readByte(
+      final InputStream commandOutput,
+      final Task task) {
+    final var readFuture = getAsync(commandOutput::read);
+    while (!(readFuture.isDone() || task.isCancelled())) ;
+    return readFuture.getNow(-1);
   }
 
   private int getNewTaskId() {
@@ -152,26 +163,39 @@ public class ChatSession {
     return taskId;
   }
 
-  private void executeAsync(
+  private void executeTaskAsync(
       final String taskName,
       final ThrowingConsumer<Task> operation) {
     final var taskId = getNewTaskId();
-    tasks.put(taskId, new Task(taskId, taskName, _task -> runAsync(() -> {
-      sendResponse("Task with id: " + taskId + " [started]");
+    tasks.put(taskId, new Task(taskId, taskName, task ->
+        CompletableFuture.runAsync(() -> {
+          sendResponse("Task with id: " + taskId + " [started]");
+          try {
+            operation.accept(task);
+          } catch (final Exception e) {
+            e.printStackTrace();
+            sendResponse(e.getMessage());
+          }
+        }).thenRunAsync(() -> {
+          tasks.remove(taskId);
+          sendResponse("Task with id: " + taskId + " [stopped]");
+        })));
+  }
+
+  private <T> CompletableFuture<T> getAsync(final ThrowingSupplier<T> operation) {
+    return CompletableFuture.supplyAsync(() -> {
       try {
-        operation.accept(_task);
+        return operation.get();
       } catch (final Exception e) {
         e.printStackTrace();
         sendResponse(e.getMessage());
       }
-    }).thenRunAsync(() -> {
-      tasks.remove(taskId);
-      sendResponse("Task with id: " + taskId + " [stopped]");
-    })));
+      return null;
+    });
   }
 
-  public void sendCommand(String command) {
-    executeAsync(command, task -> runSession(session -> {
+  public void sendCommand(final String command) {
+    executeTaskAsync(command, task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
@@ -180,14 +204,15 @@ public class ChatSession {
         exec.connect(TIMEOUT);
         processCommandOutput(commandOutput, task);
       } finally {
-        Optional.ofNullable(exec)
-            .ifPresent(Channel::disconnect);
+        if (nonNull(exec)) {
+          exec.disconnect();
+        }
       }
     }));
   }
 
   public void sendSudoCommand(final String command) {
-    executeAsync(command, task -> runSession(session -> {
+    executeTaskAsync(command, task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
@@ -199,8 +224,9 @@ public class ChatSession {
         outputStream.flush();
         processCommandOutput(commandOutput, task);
       } finally {
-        Optional.ofNullable(exec)
-            .ifPresent(Channel::disconnect);
+        if (nonNull(exec)) {
+          exec.disconnect();
+        }
       }
     }));
   }
@@ -213,8 +239,9 @@ public class ChatSession {
         sftp.connect();
         sftpRunner.accept(sftp);
       } finally {
-        Optional.ofNullable(sftp)
-            .ifPresent(ChannelSftp::exit);
+        if (nonNull(sftp)) {
+          sftp.exit();
+        }
       }
     });
   }
