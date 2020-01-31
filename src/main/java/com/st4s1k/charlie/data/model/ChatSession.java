@@ -21,6 +21,7 @@ import static com.st4s1k.charlie.service.CharlieService.createFile;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.util.Objects.nonNull;
+import static org.telegram.telegrambots.meta.api.methods.ParseMode.MARKDOWN;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -66,7 +67,11 @@ public class ChatSession {
 
   public void killTask(final int id) {
     if (tasks.containsKey(id)) {
-      tasks.get(id).stop();
+      final var task = tasks.get(id);
+      task.getFuture()
+          .thenRun(() -> sendMarkdownResponse(
+          "```\n[Task stopped: " + id + "]\n```"));
+      task.stop();
     } else {
       sendResponse("Task with given id does not exist: " + id);
     }
@@ -104,6 +109,20 @@ public class ChatSession {
     }
   }
 
+  public void sendMarkdownResponse(final String response) {
+    if (nonNull(response) && !response.isBlank()) {
+      final var sendMessageRequest = new SendMessage()
+          .setChatId(getChatId())
+          .setText(response)
+          .setParseMode(MARKDOWN);
+      try {
+        charlie.execute(sendMessageRequest);
+      } catch (final Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
   public void sendDocument(
       final String documentName,
       final InputStream inputStream,
@@ -132,14 +151,16 @@ public class ChatSession {
       outputBuffer.append((char) readByte);
       if ((currentTimeMillis() - start) > 5000 && readByte == '\n') {
         start = currentTimeMillis();
-        sendResponse(outputBuffer.toString());
+        sendResponse("[" + task.getId() + "]\n"
+            + outputBuffer.toString());
         outputBuffer.delete(0, outputBuffer.length());
       }
       readByte = readByte(commandOutput, task);
     }
 
     if (outputBuffer.length() > 0) {
-      sendResponse(outputBuffer.toString());
+      sendResponse("[" + task.getId() + "]\n"
+          + outputBuffer.toString());
     }
   }
 
@@ -169,17 +190,13 @@ public class ChatSession {
     final var taskId = getNewTaskId();
     tasks.put(taskId, new Task(taskId, taskName, task ->
         CompletableFuture.runAsync(() -> {
-          sendResponse("Task with id: " + taskId + " [started]");
           try {
             operation.accept(task);
           } catch (final Exception e) {
             e.printStackTrace();
             sendResponse(e.getMessage());
           }
-        }).thenRunAsync(() -> {
-          tasks.remove(taskId);
-          sendResponse("Task with id: " + taskId + " [stopped]");
-        })));
+        }).thenRunAsync(() -> tasks.remove(taskId))));
   }
 
   private <T> CompletableFuture<T> getAsync(final ThrowingSupplier<T> operation) {

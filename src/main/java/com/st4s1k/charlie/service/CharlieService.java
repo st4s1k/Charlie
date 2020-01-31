@@ -49,31 +49,35 @@ public class CharlieService {
   private final Map<Predicate<String>, Consumer<ChatSession>> operations = new HashMap<>();
 
   {
-    operations.put(msg -> msg.matches("^/start$"),
+    operations.put(msg -> msg.matches("^/start\\s*$"),
         this::showStartMessage);
-    operations.put(msg -> msg.matches("^/help$"),
+    operations.put(msg -> msg.matches("^/help\\s*$"),
         this::showHelpMessage);
     operations.put(msg -> msg.matches("^/conn\\s+.+$"),
         this::parseConnectionInfo);
+    operations.put(msg -> msg.matches("^/conn\\s*$"),
+        this::showConnectionInfo);
     operations.put(msg -> msg.matches("^/password\\s+.+$"),
         this::setPassword);
-    operations.put(msg -> msg.matches("^/keygen$"),
+    operations.put(msg -> msg.matches("^/password\\s*$"),
+        this::showPassword);
+    operations.put(msg -> msg.matches("^/keygen\\s*$"),
         this::keyGen);
     operations.put(msg -> msg.matches("^/sudo\\s+.+$"),
         this::executeSudoCommand);
-    operations.put(msg -> msg.matches("^/keyauth$"),
+    operations.put(msg -> msg.matches("^/keyauth\\s*$"),
         this::switchToKeyAuthMode);
     operations.put(msg -> msg.matches("^/cd\\s+.+$"),
         this::cd);
-    operations.put(msg -> msg.matches("^/pwd$"),
+    operations.put(msg -> msg.matches("^/pwd\\s*$"),
         this::pwd);
     operations.put(msg -> msg.matches("^/download\\s+.+$"),
         this::downloadAndSendDocumentToChat);
-    operations.put(msg -> msg.matches("^/reset$"),
+    operations.put(msg -> msg.matches("^/reset\\s*$"),
         this::reset);
-    operations.put(msg -> msg.matches("^/tasks$"),
+    operations.put(msg -> msg.matches("^/tasks\\s*$"),
         this::showRunningTasks);
-    operations.put(msg -> msg.matches("^/killall$"),
+    operations.put(msg -> msg.matches("^/killall\\s*$"),
         this::killAllTasks);
     operations.put(msg -> msg.matches("^/kill\\s+\\d+$"),
         this::killTask);
@@ -140,7 +144,11 @@ public class CharlieService {
         + "\n\n"
         + "/conn <user>@<host>:<port> - set connection info"
         + "\n\n"
-        + "/password <password> - remote user password"
+        + "/conn - show connection info"
+        + "\n\n"
+        + "/password <password> - set remote user password"
+        + "\n\n"
+        + "/password - show remote user password"
         + "\n\n"
         + "/keygen - generate RSA key pair and get public key"
         + "\n\n"
@@ -213,7 +221,7 @@ public class CharlieService {
         .findFirst()
         .ifPresentOrElse(
             e -> e.getValue().accept(chatSession),
-            () -> chatSession.sendResponse("Unknown command ..."));
+            () -> chatSession.sendMarkdownResponse("```\n[Unknown command]\n```"));
   }
 
   private String getReceivedText(final ChatSession chatSession) {
@@ -235,9 +243,9 @@ public class CharlieService {
       chatSession.setUserName(userName);
       chatSession.setHostName(hostName);
       chatSession.setPort(parseInt(port));
-      chatSession.sendResponse("[Connection info is set]\n");
+      chatSession.sendMarkdownResponse("```\n[Connection info is set]\n```");
     } else {
-      chatSession.sendResponse("[Invalid connection info format]");
+      chatSession.sendMarkdownResponse("```\n[Invalid connection info format]\n```");
     }
   }
 
@@ -259,7 +267,7 @@ public class CharlieService {
     final var password = getReceivedText(chatSession)
         .replaceFirst("^/password\\s+", "");
     chatSession.setPassword(password);
-    chatSession.sendResponse("[Password set]");
+    chatSession.sendMarkdownResponse("```\n[Password set]\n```");
   }
 
   private void switchToKeyAuthMode(final ChatSession chatSession) {
@@ -301,22 +309,42 @@ public class CharlieService {
   }
 
   private void showRunningTasks(final ChatSession chatSession) {
-    final var runningTasksList = chatSession.getTasks().values().stream()
-        .reduce(new StringBuilder(), (output, task) -> {
-          if (output.length() > 0) {
-            output.append("\n\n");
-          }
-          output.append(String.format(
-              "Task ID: %d\nCommand: %s",
-              task.getId(), task.getName()
-          ));
-          return output;
-        }, StringBuilder::append).toString();
-    chatSession.sendResponse(runningTasksList);
+    final var tasks = chatSession.getTasks();
+
+    if (tasks.isEmpty()) {
+      chatSession.sendMarkdownResponse("```\n[No running tasks]\n```");
+    } else {
+      final var runningTasksList = tasks.values().stream()
+          .reduce(new StringBuilder(), (output, task) -> {
+            if (output.length() > 0) {
+              output.append("\n\n");
+            }
+            output.append(String.format("```\n" +
+                    "Task ID: %d\n" +
+                    "Command: %s\n```",
+                task.getId(), task.getName()
+            ));
+            return output;
+          }, StringBuilder::append).toString();
+
+      chatSession.sendMarkdownResponse(runningTasksList);
+    }
+  }
+
+  private void showConnectionInfo(final ChatSession chatSession) {
+    chatSession.sendMarkdownResponse("```\n" +
+        "User name: " + chatSession.getUserName() + "\n" +
+        "Host name: " + chatSession.getHostName() + "\n" +
+        "     Port: " + chatSession.getPort() + "\n```");
+  }
+
+
+  private void showPassword(final ChatSession chatSession) {
+    chatSession.sendMarkdownResponse("```\nPassword: " + chatSession.getPassword() + "\n```");
   }
 
   private void reset(final ChatSession chatSession) {
     chatSession.reset();
-    chatSession.sendResponse("[User info cleared]");
+    chatSession.sendMarkdownResponse("```\n[User info cleared]\n```");
   }
 }
