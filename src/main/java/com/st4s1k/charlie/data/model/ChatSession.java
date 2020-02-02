@@ -62,14 +62,14 @@ public class ChatSession {
   }
 
   public void killAllTasks() {
-    tasks.values().forEach(Task::stop);
+    tasks.keySet().forEach(this::killTask);
   }
 
   public void killTask(final int id) {
     if (tasks.containsKey(id)) {
       final var task = tasks.get(id);
       task.getFuture().thenRun(() ->
-          sendMonoResponse("[Task stopped: " + id + "]"));
+          sendMonoResponse("[Task killed: " + id + "]"));
       task.stop();
     } else {
       sendResponse("Task with given id does not exist: " + id);
