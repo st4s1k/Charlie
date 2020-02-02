@@ -111,7 +111,8 @@ public class CharlieService {
 
   private void showStartMessage(final ChatSession chatSession) {
     final var name = chatSession.getId().getUser().getFirstName();
-    chatSession.sendResponse("Hello, " + name + ", I'm Charlie!"
+    chatSession.sendResponse(""
+        + "Hello, " + name + ", I'm Charlie!"
         + "\n\n"
         + "A telegram bot SSH client.\n"
         + "Use /help command, to get a list of available commands."
@@ -221,7 +222,7 @@ public class CharlieService {
         .findFirst()
         .ifPresentOrElse(
             e -> e.getValue().accept(chatSession),
-            () -> chatSession.sendMarkdownResponse("```\n[Unknown command]\n```"));
+            () -> chatSession.sendMonoResponse("[Unknown command]"));
   }
 
   private String getReceivedText(final ChatSession chatSession) {
@@ -243,9 +244,9 @@ public class CharlieService {
       chatSession.setUserName(userName);
       chatSession.setHostName(hostName);
       chatSession.setPort(parseInt(port));
-      chatSession.sendMarkdownResponse("```\n[Connection info is set]\n```");
+      chatSession.sendMonoResponse("[Connection info is set]");
     } else {
-      chatSession.sendMarkdownResponse("```\n[Invalid connection info format]\n```");
+      chatSession.sendMonoResponse("[Invalid connection info format]");
     }
   }
 
@@ -267,7 +268,7 @@ public class CharlieService {
     final var password = getReceivedText(chatSession)
         .replaceFirst("^/password\\s+", "");
     chatSession.setPassword(password);
-    chatSession.sendMarkdownResponse("```\n[Password set]\n```");
+    chatSession.sendMonoResponse("[Password set]");
   }
 
   private void switchToKeyAuthMode(final ChatSession chatSession) {
@@ -287,11 +288,11 @@ public class CharlieService {
       final var publicKeyPath = chatSession.getPublicKeyPath();
       final var fileInputStream = new FileInputStream(publicKeyPath);
       final var bufferedInputStream = new BufferedInputStream(fileInputStream);
-      final var documentName = "id_rsa_charlie.pub";
+      final var publicKeyFileName = "id_rsa_charlie.pub";
       final var caption = "Execute this command on the remote ssh server:\n" +
-          "cat /path/to/" + documentName + " >> /path/to/.ssh/authorized_keys\n" +
-          "example: cat ./" + documentName + " >> ~/.ssh/authorized_keys";
-      chatSession.sendDocument(documentName, bufferedInputStream, caption);
+          "cat /path/to/" + publicKeyFileName + " >> /path/to/.ssh/authorized_keys\n" +
+          "example: cat ./" + publicKeyFileName + " >> ~/.ssh/authorized_keys";
+      chatSession.sendDocument(publicKeyFileName, bufferedInputStream, caption);
     } catch (final JSchException | IOException e) {
       e.printStackTrace();
       chatSession.sendResponse(e.getMessage());
@@ -312,39 +313,32 @@ public class CharlieService {
     final var tasks = chatSession.getTasks();
 
     if (tasks.isEmpty()) {
-      chatSession.sendMarkdownResponse("```\n[No running tasks]\n```");
+      chatSession.sendMonoResponse("[No running tasks]");
     } else {
       final var runningTasksList = tasks.values().stream()
-          .reduce(new StringBuilder(), (output, task) -> {
-            if (output.length() > 0) {
-              output.append("\n\n");
-            }
-            output.append(String.format("```\n" +
-                    "Task ID: %d\n" +
-                    "Command: %s\n```",
-                task.getId(), task.getName()
-            ));
-            return output;
-          }, StringBuilder::append).toString();
-
-      chatSession.sendMarkdownResponse(runningTasksList);
+          .reduce(new StringBuilder(), (output, task) ->
+                  output.append("\n\n")
+                      .append("Task ID: ").append(task.getId()).append('\n')
+                      .append("Command: ").append(task.getName()),
+              StringBuilder::append).toString();
+      chatSession.sendMonoResponse(runningTasksList);
     }
   }
 
   private void showConnectionInfo(final ChatSession chatSession) {
-    chatSession.sendMarkdownResponse("```\n" +
+    chatSession.sendMonoResponse("" +
         "User name: " + chatSession.getUserName() + "\n" +
         "Host name: " + chatSession.getHostName() + "\n" +
-        "     Port: " + chatSession.getPort() + "\n```");
+        "     Port: " + chatSession.getPort());
   }
 
 
   private void showPassword(final ChatSession chatSession) {
-    chatSession.sendMarkdownResponse("```\nPassword: " + chatSession.getPassword() + "\n```");
+    chatSession.sendMonoResponse("Password: " + chatSession.getPassword());
   }
 
   private void reset(final ChatSession chatSession) {
     chatSession.reset();
-    chatSession.sendMarkdownResponse("```\n[User info cleared]\n```");
+    chatSession.sendMonoResponse("[Connection info cleared]");
   }
 }

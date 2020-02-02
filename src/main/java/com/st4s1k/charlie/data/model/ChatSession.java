@@ -68,9 +68,8 @@ public class ChatSession {
   public void killTask(final int id) {
     if (tasks.containsKey(id)) {
       final var task = tasks.get(id);
-      task.getFuture()
-          .thenRun(() -> sendMarkdownResponse(
-          "```\n[Task stopped: " + id + "]\n```"));
+      task.getFuture().thenRun(() ->
+          sendMonoResponse("[Task stopped: " + id + "]"));
       task.stop();
     } else {
       sendResponse("Task with given id does not exist: " + id);
@@ -96,25 +95,24 @@ public class ChatSession {
     }
   }
 
+  public void sendMonoResponse(final String response) {
+    sendResponse("```\n" + response + "\n```", true);
+  }
+
   public void sendResponse(final String response) {
+    sendResponse(response, false);
+  }
+
+  public void sendResponse(
+      final String response,
+      final boolean markdown) {
     if (nonNull(response) && !response.isBlank()) {
       final var sendMessageRequest = new SendMessage()
           .setChatId(getChatId())
           .setText(response);
-      try {
-        charlie.execute(sendMessageRequest);
-      } catch (final Exception e) {
-        e.printStackTrace();
+      if (markdown) {
+        sendMessageRequest.setParseMode(MARKDOWN);
       }
-    }
-  }
-
-  public void sendMarkdownResponse(final String response) {
-    if (nonNull(response) && !response.isBlank()) {
-      final var sendMessageRequest = new SendMessage()
-          .setChatId(getChatId())
-          .setText(response)
-          .setParseMode(MARKDOWN);
       try {
         charlie.execute(sendMessageRequest);
       } catch (final Exception e) {
