@@ -4,8 +4,10 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static lombok.AccessLevel.NONE;
@@ -19,15 +21,16 @@ public class Task {
   private final String name;
   @Getter(NONE)
   private final AtomicBoolean cancelled = new AtomicBoolean(false);
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
   private final CompletableFuture<Void> future;
 
   public Task(
       final Integer id,
       final String name,
-      final Function<Task, CompletableFuture<Void>> operation) {
+      final Consumer<Task> operation) {
     this.id = id;
     this.name = name;
-    this.future = operation.apply(this);
+    this.future = CompletableFuture.runAsync(() -> operation.accept(this), executor);
   }
 
   public boolean isCancelled() {
@@ -37,6 +40,10 @@ public class Task {
   public void stop() {
     wake();
     cancelled.set(true);
+  }
+
+  public void kill() {
+    executor.shutdownNow();
   }
 
   public void sleepUntil(final Supplier<Boolean> condition) throws InterruptedException {

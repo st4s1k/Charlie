@@ -53,12 +53,27 @@ public class ChatSession {
     this.dotSsh = dotSsh;
     this.charlie = charlie;
     this.jsch = jsch;
-    this.currentDir = "~";
+    this.currentDir = null;
     this.tasks = new HashMap<>();
   }
 
   public Long getChatId() {
     return id.getChat().getId();
+  }
+
+  public void stopAllTasks() {
+    tasks.keySet().forEach(this::stopTask);
+  }
+
+  public void stopTask(final int id) {
+    if (tasks.containsKey(id)) {
+      final var task = tasks.get(id);
+      task.getFuture().thenRun(() ->
+          sendMonoResponse("[Task stopped: " + id + "]"));
+      task.stop();
+    } else {
+      sendResponse("Task with given id does not exist: " + id);
+    }
   }
 
   public void killAllTasks() {
@@ -70,7 +85,7 @@ public class ChatSession {
       final var task = tasks.get(id);
       task.getFuture().thenRun(() ->
           sendMonoResponse("[Task killed: " + id + "]"));
-      task.stop();
+      task.kill();
     } else {
       sendResponse("Task with given id does not exist: " + id);
     }
@@ -182,21 +197,6 @@ public class ChatSession {
     return taskId;
   }
 
-  private void executeTaskAsync(
-      final String taskName,
-      final ThrowingConsumer<Task> operation) {
-    final var taskId = getNewTaskId();
-    tasks.put(taskId, new Task(taskId, taskName, task ->
-        CompletableFuture.runAsync(() -> {
-          try {
-            operation.accept(task);
-          } catch (final Exception e) {
-            e.printStackTrace();
-            sendResponse(e.getMessage());
-          }
-        }).thenRunAsync(() -> tasks.remove(taskId))));
-  }
-
   private <T> CompletableFuture<T> getAsync(final ThrowingSupplier<T> operation) {
     return CompletableFuture.supplyAsync(() -> {
       try {
@@ -207,6 +207,24 @@ public class ChatSession {
       }
       return null;
     });
+  }
+
+  private void executeTaskAsync(
+      final String taskName,
+      final ThrowingConsumer<Task> operation) {
+    final var taskId = getNewTaskId();
+    final var task = new Task(taskId, taskName, _task -> {
+      try {
+        operation.accept(_task);
+      } catch (final Exception e) {
+        e.printStackTrace();
+        sendResponse(e.getMessage());
+      }
+    });
+    task.getFuture().thenRun(() -> tasks.remove(taskId));
+    tasks.put(taskId, task);
+
+    sendResponse("[started task: " + taskId + "] " + taskName);
   }
 
   public void sendCommand(final String command) {
@@ -246,8 +264,10 @@ public class ChatSession {
     }));
   }
 
-  public void runSftp(ThrowingConsumer<ChannelSftp> sftpRunner) {
-    runSession(session -> {
+  public void runSftp(
+      final String taskName,
+      final ThrowingConsumer<ChannelSftp> sftpRunner) {
+    executeTaskAsync(taskName, task -> runSession(session -> {
       ChannelSftp sftp = null;
       try {
         sftp = (ChannelSftp) session.openChannel("sftp");
@@ -258,7 +278,7 @@ public class ChatSession {
           sftp.exit();
         }
       }
-    });
+    }));
   }
 
   public void genKeyPair()
@@ -277,7 +297,7 @@ public class ChatSession {
 
   @PreDestroy
   public void reset() {
-    currentDir = "~";
+    currentDir = null;
     update = null;
     userName = null;
     hostName = null;

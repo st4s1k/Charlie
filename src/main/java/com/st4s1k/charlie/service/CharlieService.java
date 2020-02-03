@@ -19,6 +19,8 @@ import java.util.function.Predicate;
 
 import static com.jcraft.jsch.ChannelSftp.APPEND;
 import static java.lang.Integer.parseInt;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 @Service
 @RequiredArgsConstructor
@@ -77,66 +79,14 @@ public class CharlieService {
         this::reset);
     operations.put(msg -> msg.matches("^/tasks\\s*$"),
         this::showRunningTasks);
+    operations.put(msg -> msg.matches("^/stopall\\s*$"),
+        this::stopAllTasks);
+    operations.put(msg -> msg.matches("^/stop\\s+\\d+$"),
+        this::stopTask);
     operations.put(msg -> msg.matches("^/killall\\s*$"),
         this::killAllTasks);
     operations.put(msg -> msg.matches("^/kill\\s+\\d+$"),
         this::killTask);
-  }
-
-  @SuppressWarnings("ResultOfMethodCallIgnored")
-  public static void createFile(final String filePath) throws IOException {
-    final var file = new File(filePath);
-    createFileDirs(filePath);
-    if (!file.exists()) {
-      file.createNewFile();
-    }
-  }
-
-  @SuppressWarnings("ResultOfMethodCallIgnored")
-  public static void createFileDirs(final String filePath) {
-    final var fileDir = new File(filePath.substring(0, filePath.lastIndexOf('/')));
-    if (!fileDir.exists()) {
-      fileDir.mkdirs();
-    }
-  }
-
-  public void parse(final ChatSession chatSession) {
-    final var receivedText = getReceivedText(chatSession);
-    if (receivedText.startsWith("/")) {
-      parseCommand(chatSession);
-    } else {
-      executeCommand(chatSession);
-    }
-  }
-
-  private void showStartMessage(final ChatSession chatSession) {
-    final var name = chatSession.getId().getUser().getFirstName();
-    chatSession.sendResponse(""
-        + "Hello, " + name + ", I'm Charlie!"
-        + "\n\n"
-        + "A telegram bot SSH client.\n"
-        + "Use /help command, to get a list of available commands."
-        + "\n\n"
-        + "To connect to a server using password:\n"
-        + "1. /conn <user>@<host>:<port>\n"
-        + "2. /password <password>"
-        + "\n\n"
-        + "To connect to a server using RSA key pair:\n"
-        + "1. /conn <user>@<host>:<port>\n"
-        + "2. /keygen\n"
-        + "3. append obtained public key file content to authorized_keys\n"
-        + " (ex: cat id_rsa_charlie.pub >> ~/.ssh/authorized_keys)"
-        + "\n\n"
-        + "To execute a remote command, type anything without a leading forward slash \"/\""
-        + "\n\n"
-        + "Be aware, that this bot is running on https://www.heroku.com/ ,"
-        + " that means that, the machine on which this bot is running"
-        + " may reboot once in a while, erasing all files stored locally,"
-        + " including generated RSA keys."
-        + "\n\n"
-        + "The code for this bot is open-source:"
-        + "https://github.com/st4s1k/Charlie"
-    );
   }
 
   private void showHelpMessage(final ChatSession chatSession) {
@@ -172,20 +122,83 @@ public class CharlieService {
         + "\n\n"
         + "/tasks - list all running tasks"
         + "\n\n"
-        + "/killall - kill all running tasks"
+        + "/stopall - stop all running tasks"
         + "\n\n"
-        + "/kill <taskId> - kill task with given ID"
+        + "/stop <taskId> - stop task with given ID"
+        + "\n\n"
+        + "/killall - kill all running tasks (aggressive)"
+        + "\n\n"
+        + "/kill <taskId> - kill task with given ID (aggressive)"
         + "\n\n"
         + "<command> - execute command on remote SSH server"
     );
   }
 
+  private void showStartMessage(final ChatSession chatSession) {
+    final var name = chatSession.getId().getUser().getFirstName();
+    chatSession.sendResponse(""
+        + "Hello, " + name + ", I'm Charlie!"
+        + "\n\n"
+        + "A telegram bot SSH client.\n"
+        + "Use /help command, to get a list of available commands."
+        + "\n\n"
+        + "To connect to a server using password:\n"
+        + "1. /conn <user>@<host>:<port>\n"
+        + "2. /password <password>"
+        + "\n\n"
+        + "To connect to a server using RSA key pair:\n"
+        + "1. /conn <user>@<host>:<port>\n"
+        + "2. /keygen\n"
+        + "3. append obtained public key file content to authorized_keys\n"
+        + " (ex: cat id_rsa_charlie.pub >> ~/.ssh/authorized_keys)"
+        + "\n\n"
+        + "To execute a remote command, type anything without a leading forward slash \"/\""
+        + "\n\n"
+        + "Be aware, that this bot is running on https://www.heroku.com/ ,"
+        + " that means that, the machine on which this bot is running"
+        + " may reboot once in a while, erasing all files stored locally,"
+        + " including generated RSA keys."
+        + "\n\n"
+        + "The code for this bot is open-source:"
+        + "https://github.com/st4s1k/Charlie"
+    );
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  public static void createFile(final String filePath) throws IOException {
+    final var file = new File(filePath);
+    createFileDirs(filePath);
+    if (!file.exists()) {
+      file.createNewFile();
+    }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  public static void createFileDirs(final String filePath) {
+    final var fileDir = new File(filePath.substring(0, filePath.lastIndexOf('/')));
+    if (!fileDir.exists()) {
+      fileDir.mkdirs();
+    }
+  }
+
+  public void parse(final ChatSession chatSession) {
+    final var receivedText = getReceivedText(chatSession);
+    if (receivedText.startsWith("/")) {
+      parseCommand(chatSession);
+    } else {
+      executeCommand(chatSession);
+    }
+  }
+
   private void downloadAndSendDocumentToChat(final ChatSession chatSession) {
-    chatSession.runSftp(sftp -> {
-      final var remoteFilePath = getReceivedText(chatSession)
-          .replaceFirst("^/download\\s+", "");
-      sftp.cd(chatSession.getCurrentDir() + "/");
-      final var fileName = remoteFilePath.substring(remoteFilePath.lastIndexOf('/') + 1);
+    final var remoteFilePath = getReceivedText(chatSession)
+        .replaceFirst("^/download\\s+", "");
+    chatSession.runSftp("[/download] " + remoteFilePath, sftp -> {
+      if (nonNull(chatSession.getCurrentDir())) {
+        sftp.cd(chatSession.getCurrentDir() + "/");
+      }
+      final var lastIndexOfForwardSlash = remoteFilePath.lastIndexOf('/');
+      final var fileName = remoteFilePath.substring(lastIndexOfForwardSlash + 1);
       final var inputStream = sftp.get(remoteFilePath);
       chatSession.sendDocument(fileName, inputStream, fileName);
     });
@@ -194,8 +207,11 @@ public class CharlieService {
   private void executeCommand(
       final String command,
       final ChatSession chatSession) {
-    chatSession.sendCommand("cd " + chatSession.getCurrentDir()
-        + " && " + command);
+    if (isNull(chatSession.getCurrentDir())) {
+      chatSession.sendCommand(command);
+    } else {
+      chatSession.sendCommand("cd " + chatSession.getCurrentDir() + " && " + command);
+    }
   }
 
   private void executeCommand(final ChatSession chatSession) {
@@ -206,8 +222,11 @@ public class CharlieService {
   private void executeSudoCommand(
       final String command,
       final ChatSession chatSession) {
-    chatSession.sendSudoCommand("cd " + chatSession.getCurrentDir()
-        + " && " + command);
+    if (isNull(chatSession.getCurrentDir())) {
+      chatSession.sendSudoCommand(command);
+    } else {
+      chatSession.sendSudoCommand("cd " + chatSession.getCurrentDir() + " && " + command);
+    }
   }
 
   private void executeSudoCommand(final ChatSession chatSession) {
@@ -251,13 +270,21 @@ public class CharlieService {
   }
 
   private void pwd(final ChatSession chatSession) {
-    chatSession.sendResponse(chatSession.getCurrentDir());
+    if (isNull(chatSession.getCurrentDir())) {
+      chatSession.runSftp("[/cd] .", channelSftp -> {
+        channelSftp.cd(".");
+        chatSession.setCurrentDir(channelSftp.pwd());
+        chatSession.sendResponse(chatSession.getCurrentDir());
+      });
+    } else {
+      chatSession.sendResponse(chatSession.getCurrentDir());
+    }
   }
 
   private void cd(final ChatSession chatSession) {
     final var dir = getReceivedText(chatSession)
         .replaceFirst("^/cd\\s+", "");
-    chatSession.runSftp(channelSftp -> {
+    chatSession.runSftp("[/cd] " + dir, channelSftp -> {
       channelSftp.cd(dir);
       chatSession.setCurrentDir(channelSftp.pwd());
     });
@@ -272,7 +299,7 @@ public class CharlieService {
   }
 
   private void switchToKeyAuthMode(final ChatSession chatSession) {
-    chatSession.runSftp(sftp -> {
+    chatSession.runSftp("[/keyauth]", sftp -> {
       chatSession.genKeyPair();
       final var publicKeyPath = chatSession.getPublicKeyPath();
       final var fileInputStream = new FileInputStream(publicKeyPath);
@@ -297,6 +324,16 @@ public class CharlieService {
       e.printStackTrace();
       chatSession.sendResponse(e.getMessage());
     }
+  }
+
+  private void stopAllTasks(final ChatSession chatSession) {
+    chatSession.stopAllTasks();
+  }
+
+  private void stopTask(final ChatSession chatSession) {
+    final var taskId = getReceivedText(chatSession)
+        .replaceFirst("^/stop\\s+", "");
+    chatSession.stopTask(Integer.parseInt(taskId));
   }
 
   private void killAllTasks(final ChatSession chatSession) {
