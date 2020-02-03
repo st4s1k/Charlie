@@ -316,10 +316,11 @@ public class CharlieService {
       chatSession.sendMonoResponse("[No running tasks]");
     } else {
       final var runningTasksList = tasks.values().stream()
-          .reduce(new StringBuilder(), (output, task) ->
-                  output.append(tasks.size() > 1 ? "\n\n" : "")
-                      .append("Task ID: ").append(task.getId()).append('\n')
-                      .append("Command: ").append(task.getName()),
+          .reduce(new StringBuilder()
+                  .append(tasks.size() > 1 ? "\n\n" : ""),
+              (output, task) -> output
+                  .append("Task ID: ").append(task.getId()).append('\n')
+                  .append("Command: ").append(task.getName()),
               StringBuilder::append).toString();
       chatSession.sendMonoResponse(runningTasksList);
     }
