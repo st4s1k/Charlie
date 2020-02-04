@@ -202,29 +202,25 @@ public class CharlieService {
     });
   }
 
-  private void executeCommand(
-      final String command,
-      final ChatSession chatSession) {
-    if (chatSession.getCurrentDir().isPresent()) {
-      chatSession.sendCommand("cd " + chatSession.getCurrentDir().get() + " && " + command);
-    } else {
-      chatSession.sendCommand(command);
-    }
-  }
-
   private void executeCommand(final ChatSession chatSession) {
     final var command = getReceivedText(chatSession);
     executeCommand(command, chatSession);
   }
 
+  private void executeCommand(
+      final String command,
+      final ChatSession chatSession) {
+    chatSession.getCurrentDir().ifPresentOrElse(
+        currentDir -> chatSession.sendCommand("cd " + currentDir + " && " + command),
+        () -> chatSession.sendCommand(command));
+  }
+
   private void executeSudoCommand(
       final String command,
       final ChatSession chatSession) {
-    if (chatSession.getCurrentDir().isPresent()) {
-      chatSession.sendSudoCommand("cd " + chatSession.getCurrentDir().get() + " && " + command);
-    } else {
-      chatSession.sendSudoCommand(command);
-    }
+    chatSession.getCurrentDir().ifPresentOrElse(
+        currentDir -> chatSession.sendSudoCommand("cd " + currentDir + " && " + command),
+        () -> chatSession.sendSudoCommand(command));
   }
 
   private void executeSudoCommand(final ChatSession chatSession) {
@@ -352,9 +348,9 @@ public class CharlieService {
       chatSession.sendMonoResponse("[No running tasks]");
     } else {
       final var runningTasksList = tasks.values().stream()
-          .reduce(new StringBuilder()
-                  .append(tasks.size() > 1 ? "\n\n" : ""),
+          .reduce(new StringBuilder(),
               (output, task) -> output
+                  .append(output.length() > 1 ? "\n\n" : "")
                   .append("Task ID: ").append(task.getId()).append('\n')
                   .append("Command: ").append(task.getName()),
               StringBuilder::append).toString();
