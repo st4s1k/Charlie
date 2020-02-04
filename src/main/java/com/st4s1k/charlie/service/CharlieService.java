@@ -278,6 +278,9 @@ public class CharlieService {
     final var dir = getReceivedText(chatSession)
         .replaceFirst("^/cd\\s+", "");
     chatSession.runSftp("[/cd] " + dir, channelSftp -> {
+      if (chatSession.getCurrentDir().isPresent()) {
+        channelSftp.cd(chatSession.getCurrentDir().get());
+      }
       channelSftp.cd(dir);
       chatSession.setCurrentDir(channelSftp.pwd());
     }).getFuture().thenRun(() ->
