@@ -19,8 +19,6 @@ import java.util.function.Predicate;
 
 import static com.jcraft.jsch.ChannelSftp.APPEND;
 import static java.lang.Integer.parseInt;
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 
 @Service
 @RequiredArgsConstructor
@@ -194,8 +192,8 @@ public class CharlieService {
     final var remoteFilePath = getReceivedText(chatSession)
         .replaceFirst("^/download\\s+", "");
     chatSession.runSftp("[/download] " + remoteFilePath, sftp -> {
-      if (nonNull(chatSession.getCurrentDir())) {
-        sftp.cd(chatSession.getCurrentDir() + "/");
+      if (chatSession.getCurrentDir().isPresent()) {
+        sftp.cd(chatSession.getCurrentDir().get() + "/");
       }
       final var lastIndexOfForwardSlash = remoteFilePath.lastIndexOf('/');
       final var fileName = remoteFilePath.substring(lastIndexOfForwardSlash + 1);
@@ -207,10 +205,10 @@ public class CharlieService {
   private void executeCommand(
       final String command,
       final ChatSession chatSession) {
-    if (isNull(chatSession.getCurrentDir())) {
-      chatSession.sendCommand(command);
+    if (chatSession.getCurrentDir().isPresent()) {
+      chatSession.sendCommand("cd " + chatSession.getCurrentDir().get() + " && " + command);
     } else {
-      chatSession.sendCommand("cd " + chatSession.getCurrentDir() + " && " + command);
+      chatSession.sendCommand(command);
     }
   }
 
@@ -222,10 +220,10 @@ public class CharlieService {
   private void executeSudoCommand(
       final String command,
       final ChatSession chatSession) {
-    if (isNull(chatSession.getCurrentDir())) {
-      chatSession.sendSudoCommand(command);
+    if (chatSession.getCurrentDir().isPresent()) {
+      chatSession.sendSudoCommand("cd " + chatSession.getCurrentDir().get() + " && " + command);
     } else {
-      chatSession.sendSudoCommand("cd " + chatSession.getCurrentDir() + " && " + command);
+      chatSession.sendSudoCommand(command);
     }
   }
 
@@ -270,14 +268,15 @@ public class CharlieService {
   }
 
   private void pwd(final ChatSession chatSession) {
-    if (isNull(chatSession.getCurrentDir())) {
+    if (chatSession.getCurrentDir().isPresent()) {
+      chatSession.sendResponse(chatSession.getCurrentDir().get());
+    } else {
       chatSession.runSftp("[/cd] .", channelSftp -> {
         channelSftp.cd(".");
         chatSession.setCurrentDir(channelSftp.pwd());
-        chatSession.sendResponse(chatSession.getCurrentDir());
+        chatSession.getCurrentDir()
+            .ifPresent(chatSession::sendResponse);
       });
-    } else {
-      chatSession.sendResponse(chatSession.getCurrentDir());
     }
   }
 

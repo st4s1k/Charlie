@@ -4,6 +4,7 @@ import com.jcraft.jsch.*;
 import com.st4s1k.charlie.service.CharlieTelegramBot;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -14,6 +15,7 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static com.jcraft.jsch.KeyPair.RSA;
@@ -21,6 +23,7 @@ import static com.st4s1k.charlie.service.CharlieService.createFile;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.util.Objects.nonNull;
+import static lombok.AccessLevel.NONE;
 import static org.telegram.telegrambots.meta.api.methods.ParseMode.MARKDOWN;
 
 @Data
@@ -37,6 +40,7 @@ public class ChatSession {
   private final Map<Integer, Task> tasks;
 
   private Update update;
+  @Getter(NONE)
   private String currentDir;
   private String password;
   private String publicKeyPath;
@@ -303,5 +307,9 @@ public class ChatSession {
     hostName = null;
     password = null;
     port = 0;
+  }
+
+  public Optional<String> getCurrentDir() {
+    return Optional.ofNullable(currentDir);
   }
 }
