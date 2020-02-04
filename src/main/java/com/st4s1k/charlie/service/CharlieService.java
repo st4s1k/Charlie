@@ -2,6 +2,7 @@ package com.st4s1k.charlie.service;
 
 import com.jcraft.jsch.JSchException;
 import com.st4s1k.charlie.data.model.ChatSession;
+import com.st4s1k.charlie.data.model.Task;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.jcraft.jsch.ChannelSftp.APPEND;
@@ -209,18 +211,23 @@ public class CharlieService {
 
   private void executeCommand(
       final String command,
-      final ChatSession chatSession) {
+      final ChatSession chatSession,
+      final Function<String, Task> commandExecutor) {
     chatSession.getCurrentDir().ifPresentOrElse(
-        currentDir -> chatSession.sendCommand("cd " + currentDir + " && " + command),
-        () -> chatSession.sendCommand(command));
+        currentDir -> commandExecutor.apply("cd \"" + currentDir + "\" && " + command),
+        () -> commandExecutor.apply(command));
+  }
+
+  private void executeCommand(
+      final String command,
+      final ChatSession chatSession) {
+    executeCommand(command, chatSession, chatSession::executeCommand);
   }
 
   private void executeSudoCommand(
       final String command,
       final ChatSession chatSession) {
-    chatSession.getCurrentDir().ifPresentOrElse(
-        currentDir -> chatSession.sendSudoCommand("cd " + currentDir + " && " + command),
-        () -> chatSession.sendSudoCommand(command));
+    executeCommand(command, chatSession, chatSession::executeSudoCommand);
   }
 
   private void executeSudoCommand(final ChatSession chatSession) {
@@ -251,8 +258,11 @@ public class CharlieService {
     final var hostInfo = getReceivedText(chatSession)
         .replaceFirst("^/conn\\s+", "");
     if (hostInfo.matches(HOST_INFO_REGEX)) {
-      final var userName = hostInfo.substring(0, hostInfo.indexOf('@'));
-      final var hostName = hostInfo.substring(hostInfo.indexOf('@') + 1, hostInfo.indexOf(':'));
+      final var userName = hostInfo.substring(0,
+          hostInfo.indexOf('@'));
+      final var hostName = hostInfo.substring(
+          hostInfo.indexOf('@') + 1,
+          hostInfo.indexOf(':'));
       final var port = hostInfo.substring(hostInfo.indexOf(':') + 1);
       chatSession.setUserName(userName);
       chatSession.setHostName(hostName);
@@ -264,8 +274,8 @@ public class CharlieService {
   }
 
   private void pwd(final ChatSession chatSession) {
-    chatSession.getCurrentDir().
-        ifPresentOrElse(chatSession::sendResponse, () ->
+    chatSession.getCurrentDir()
+        .ifPresentOrElse(chatSession::sendResponse, () ->
             chatSession.runSftp("[/cd] .", channelSftp -> {
               channelSftp.cd(".");
               chatSession.setCurrentDir(channelSftp.pwd());

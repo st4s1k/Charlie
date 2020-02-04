@@ -30,14 +30,12 @@ import static org.telegram.telegrambots.meta.api.methods.ParseMode.MARKDOWN;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ChatSession {
 
-  private static final int TIMEOUT = 0;
-
   @EqualsAndHashCode.Include
   private final ChatSessionId id;
   private final String dotSsh;
   private final CharlieTelegramBot charlie;
   private final JSch jsch;
-  private final Map<Integer, Task> tasks;
+  private final Map<Integer, Task> tasks = new HashMap<>();
 
   private Update update;
   @Getter(NONE)
@@ -48,6 +46,8 @@ public class ChatSession {
   private String hostName;
   private int port;
 
+  private int connectionTimeout = 5;
+
   public ChatSession(
       final ChatSessionId id,
       final String dotSsh,
@@ -57,8 +57,6 @@ public class ChatSession {
     this.dotSsh = dotSsh;
     this.charlie = charlie;
     this.jsch = jsch;
-    this.currentDir = null;
-    this.tasks = new HashMap<>();
   }
 
   public Long getChatId() {
@@ -233,14 +231,14 @@ public class ChatSession {
     return task;
   }
 
-  public Task sendCommand(final String command) {
+  public Task executeCommand(final String command) {
     return executeTaskAsync(command, task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
         exec.setCommand(command);
         final var commandOutput = exec.getInputStream();
-        exec.connect(TIMEOUT);
+        exec.connect(connectionTimeout);
         processCommandOutput(commandOutput, task);
       } finally {
         if (nonNull(exec)) {
@@ -250,7 +248,7 @@ public class ChatSession {
     }));
   }
 
-  public Task sendSudoCommand(final String command) {
+  public Task executeSudoCommand(final String command) {
     return executeTaskAsync(command, task -> runSession(session -> {
       ChannelExec exec = null;
       try {
@@ -258,7 +256,7 @@ public class ChatSession {
         exec.setCommand("sudo -S -p '' sh -c \"" + command + "\"");
         final var commandOutput = exec.getInputStream();
         final var outputStream = exec.getOutputStream();
-        exec.connect(TIMEOUT);
+        exec.connect(connectionTimeout);
         outputStream.write((password + "\n").getBytes());
         outputStream.flush();
         processCommandOutput(commandOutput, task);
