@@ -305,7 +305,8 @@ public class CharlieService {
     chatSession.runSftp("[/home]", channelSftp -> {
       channelSftp.cd(channelSftp.getHome());
       chatSession.setCurrentDir(channelSftp.pwd());
-    });
+    }).getFuture().thenRun(() ->
+        executeCommand("ls", chatSession));
   }
 
   private void setPassword(final ChatSession chatSession) {
