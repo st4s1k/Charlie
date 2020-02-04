@@ -213,7 +213,7 @@ public class ChatSession {
     });
   }
 
-  private void executeTaskAsync(
+  private Task executeTaskAsync(
       final String taskName,
       final ThrowingConsumer<Task> operation) {
     final var taskId = getNewTaskId();
@@ -229,10 +229,12 @@ public class ChatSession {
     tasks.put(taskId, task);
 
     sendResponse("[started task: " + taskId + "] " + taskName);
+
+    return task;
   }
 
-  public void sendCommand(final String command) {
-    executeTaskAsync(command, task -> runSession(session -> {
+  public Task sendCommand(final String command) {
+    return executeTaskAsync(command, task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
@@ -248,8 +250,8 @@ public class ChatSession {
     }));
   }
 
-  public void sendSudoCommand(final String command) {
-    executeTaskAsync(command, task -> runSession(session -> {
+  public Task sendSudoCommand(final String command) {
+    return executeTaskAsync(command, task -> runSession(session -> {
       ChannelExec exec = null;
       try {
         exec = (ChannelExec) session.openChannel("exec");
@@ -268,10 +270,10 @@ public class ChatSession {
     }));
   }
 
-  public void runSftp(
+  public Task runSftp(
       final String taskName,
       final ThrowingConsumer<ChannelSftp> sftpRunner) {
-    executeTaskAsync(taskName, task -> runSession(session -> {
+    return executeTaskAsync(taskName, task -> runSession(session -> {
       ChannelSftp sftp = null;
       try {
         sftp = (ChannelSftp) session.openChannel("sftp");

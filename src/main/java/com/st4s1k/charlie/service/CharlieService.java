@@ -264,16 +264,14 @@ public class CharlieService {
   }
 
   private void pwd(final ChatSession chatSession) {
-    if (chatSession.getCurrentDir().isPresent()) {
-      chatSession.sendResponse(chatSession.getCurrentDir().get());
-    } else {
-      chatSession.runSftp("[/cd] .", channelSftp -> {
-        channelSftp.cd(".");
-        chatSession.setCurrentDir(channelSftp.pwd());
-        chatSession.getCurrentDir()
-            .ifPresent(chatSession::sendResponse);
-      });
-    }
+    chatSession.getCurrentDir().
+        ifPresentOrElse(chatSession::sendResponse, () ->
+            chatSession.runSftp("[/cd] .", channelSftp -> {
+              channelSftp.cd(".");
+              chatSession.setCurrentDir(channelSftp.pwd());
+              chatSession.getCurrentDir()
+                  .ifPresent(chatSession::sendResponse);
+            }));
   }
 
   private void cd(final ChatSession chatSession) {
@@ -282,8 +280,8 @@ public class CharlieService {
     chatSession.runSftp("[/cd] " + dir, channelSftp -> {
       channelSftp.cd(dir);
       chatSession.setCurrentDir(channelSftp.pwd());
-    });
-    executeCommand("ls", chatSession);
+    }).getFuture().thenRun(() ->
+        executeCommand("ls", chatSession));
   }
 
   private void setPassword(final ChatSession chatSession) {
