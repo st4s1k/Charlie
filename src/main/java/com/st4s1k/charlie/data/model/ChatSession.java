@@ -46,7 +46,7 @@ public class ChatSession {
   private String hostName;
   private int port;
 
-  private int connectionTimeout = 5;
+  private int connectionTimeout = 10_000; // in milliseconds
 
   public ChatSession(
       final ChatSessionId id,
