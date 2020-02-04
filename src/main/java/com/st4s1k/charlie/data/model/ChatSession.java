@@ -24,7 +24,6 @@ import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.util.Objects.nonNull;
 import static lombok.AccessLevel.NONE;
-import static org.telegram.telegrambots.meta.api.methods.ParseMode.MARKDOWN;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -126,10 +125,8 @@ public class ChatSession {
     if (nonNull(response) && !response.isBlank()) {
       final var sendMessageRequest = new SendMessage()
           .setChatId(getChatId())
-          .setText(response);
-      if (markdown) {
-        sendMessageRequest.setParseMode(MARKDOWN);
-      }
+          .setText(response)
+          .enableMarkdown(markdown);
       try {
         charlie.execute(sendMessageRequest);
       } catch (final Exception e) {
