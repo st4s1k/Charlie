@@ -73,6 +73,8 @@ public class CharlieService {
         this::cd);
     operations.put(msg -> msg.matches("^/pwd\\s*$"),
         this::pwd);
+    operations.put(msg -> msg.matches("^/home\\s*$"),
+        this::home);
     operations.put(msg -> msg.matches("^/download\\s+.+$"),
         this::downloadAndSendDocumentToChat);
     operations.put(msg -> msg.matches("^/reset\\s*$"),
@@ -115,6 +117,8 @@ public class CharlieService {
         + " so this is a workaround"
         + "\n\n"
         + "/pwd - shows the value of the current directory variable"
+        + "\n\n"
+        + "/home - change current directory to user home directory"
         + "\n\n"
         + "/download <file_path> - download file from remote server into chat"
         + "\n\n"
@@ -273,17 +277,6 @@ public class CharlieService {
     }
   }
 
-  private void pwd(final ChatSession chatSession) {
-    chatSession.getCurrentDir()
-        .ifPresentOrElse(chatSession::sendResponse, () ->
-            chatSession.runSftp("[/cd] .", channelSftp -> {
-              channelSftp.cd(".");
-              chatSession.setCurrentDir(channelSftp.pwd());
-              chatSession.getCurrentDir()
-                  .ifPresent(chatSession::sendResponse);
-            }));
-  }
-
   private void cd(final ChatSession chatSession) {
     final var dir = getReceivedText(chatSession)
         .replaceFirst("^/cd\\s+", "");
@@ -295,6 +288,24 @@ public class CharlieService {
       chatSession.setCurrentDir(channelSftp.pwd());
     }).getFuture().thenRun(() ->
         executeCommand("ls", chatSession));
+  }
+
+  private void pwd(final ChatSession chatSession) {
+    chatSession.getCurrentDir()
+        .ifPresentOrElse(chatSession::sendResponse, () ->
+            chatSession.runSftp("[/cd] .", channelSftp -> {
+              channelSftp.cd(".");
+              chatSession.setCurrentDir(channelSftp.pwd());
+              chatSession.getCurrentDir()
+                  .ifPresent(chatSession::sendResponse);
+            }));
+  }
+
+  private void home(final ChatSession chatSession) {
+    chatSession.runSftp("[/home]", channelSftp -> {
+      channelSftp.cd(channelSftp.getHome());
+      chatSession.setCurrentDir(channelSftp.pwd());
+    });
   }
 
   private void setPassword(final ChatSession chatSession) {
