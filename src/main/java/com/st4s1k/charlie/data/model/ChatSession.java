@@ -45,13 +45,15 @@ public class ChatSession {
   private String hostName;
   private int port;
 
-  private int connectionTimeout = 10_000; // in milliseconds
+  private int connectionTimeout = 10_000;
+  private long commandOutputTimeout = 5_000;
 
   public ChatSession(
       final ChatSessionId id,
       final String dotSsh,
       final CharlieTelegramBot charlie,
-      final JSch jsch) {
+      final JSch jsch
+  ) {
     this.id = id;
     this.dotSsh = dotSsh;
     this.charlie = charlie;
@@ -69,7 +71,7 @@ public class ChatSession {
   public void stopTask(final int id) {
     if (tasks.containsKey(id)) {
       final var task = tasks.get(id);
-      task.getFuture().thenRun(() ->
+      task.getFuture().whenComplete((r, t) ->
           sendMonoResponse("[Task stopped: " + id + "]"));
       task.stop();
     } else {
@@ -84,7 +86,7 @@ public class ChatSession {
   public void killTask(final int id) {
     if (tasks.containsKey(id)) {
       final var task = tasks.get(id);
-      task.getFuture().thenRun(() ->
+      task.getFuture().whenComplete((r, t) ->
           sendMonoResponse("[Task killed: " + id + "]"));
       task.kill();
     } else {
@@ -92,7 +94,8 @@ public class ChatSession {
     }
   }
 
-  private void runSession(final ThrowingConsumer<Session> operation) {
+  private <E extends Exception>
+  void runSession(final ThrowingConsumer<Session, E> operation) {
     Session session = null;
     try {
       session = jsch.getSession(userName, hostName, port);
@@ -102,8 +105,8 @@ public class ChatSession {
       session.connect();
       operation.accept(session);
     } catch (final Exception e) {
-      e.printStackTrace();
       sendResponse(e.getMessage());
+      throw new SessionRunFailedException(e);
     } finally {
       if (nonNull(session)) {
         session.disconnect();
@@ -121,7 +124,8 @@ public class ChatSession {
 
   public void sendResponse(
       final String response,
-      final boolean markdown) {
+      final boolean markdown
+  ) {
     if (nonNull(response) && !response.isBlank()) {
       final var sendMessageRequest = new SendMessage()
           .setChatId(getChatId())
@@ -130,7 +134,7 @@ public class ChatSession {
       try {
         charlie.execute(sendMessageRequest);
       } catch (final Exception e) {
-        e.printStackTrace();
+        throw new ResponseSendFailedException(e);
       }
     }
   }
@@ -138,7 +142,8 @@ public class ChatSession {
   public void sendDocument(
       final String documentName,
       final InputStream inputStream,
-      final String caption) {
+      final String caption
+  ) {
     final var sendDocumentRequest = new SendDocument()
         .setChatId(getChatId())
         .setDocument(documentName, inputStream)
@@ -146,14 +151,15 @@ public class ChatSession {
     try {
       charlie.execute(sendDocumentRequest);
     } catch (final Exception e) {
-      e.printStackTrace();
       sendResponse(e.getMessage());
+      throw new DocumentSendFailedException(e);
     }
   }
 
   private void processCommandOutput(
       final InputStream commandOutput,
-      final Task task) throws InterruptedException {
+      final Task task
+  ) throws InterruptedException {
     final var outputBuffer = new StringBuilder();
 
     int readByte = readByte(commandOutput, task);
@@ -161,7 +167,7 @@ public class ChatSession {
 
     while (!(readByte == -1 || task.isCancelled())) {
       outputBuffer.append((char) readByte);
-      if ((currentTimeMillis() - start) > 5000 && readByte == '\n') {
+      if ((currentTimeMillis() - start) > commandOutputTimeout && readByte == '\n') {
         start = currentTimeMillis();
         sendResponse("[" + task.getId() + "]\n"
             + outputBuffer.toString());
@@ -178,7 +184,8 @@ public class ChatSession {
 
   private int readByte(
       final InputStream commandOutput,
-      final Task task) throws InterruptedException {
+      final Task task
+  ) throws InterruptedException {
     final var readByteFuture = getAsync(commandOutput::read);
     readByteFuture.thenRun(task::wake);
     task.sleepUntil(readByteFuture::isDone);
@@ -196,31 +203,34 @@ public class ChatSession {
     return taskId;
   }
 
-  private <T> CompletableFuture<T> getAsync(final ThrowingSupplier<T> operation) {
+  private <T, E extends Exception>
+  CompletableFuture<T> getAsync(final ThrowingSupplier<T, E> operation) {
     return CompletableFuture.supplyAsync(() -> {
       try {
         return operation.get();
       } catch (final Exception e) {
-        e.printStackTrace();
-        sendResponse(e.getMessage());
+        throw new AsyncSupplyFailedException(e);
       }
-      return null;
     });
   }
 
-  private Task executeTaskAsync(
+  private <E extends Exception> Task executeTaskAsync(
       final String taskName,
-      final ThrowingConsumer<Task> operation) {
+      final ThrowingConsumer<Task, E> operation
+  ) {
     final var taskId = getNewTaskId();
-    final var task = new Task(taskId, taskName, _task -> {
-      try {
-        operation.accept(_task);
-      } catch (final Exception e) {
-        e.printStackTrace();
-        sendResponse(e.getMessage());
-      }
-    });
-    task.getFuture().thenRun(() -> tasks.remove(taskId));
+    final var task = new Task(taskId, taskName,
+        thisTask -> {
+          try {
+            operation.accept(thisTask);
+          } catch (final Exception e) {
+            throw new TaskExecutionFailedException(e);
+          }
+        });
+
+    task.getFuture()
+        .whenComplete((r, t) -> tasks.remove(taskId));
+
     tasks.put(taskId, task);
 
     sendResponse("[started task: " + taskId + "] " + taskName);
@@ -229,71 +239,89 @@ public class ChatSession {
   }
 
   public Task executeCommand(final String command) {
-    return executeTaskAsync(command, task -> runSession(session -> {
-      ChannelExec exec = null;
-      try {
-        exec = (ChannelExec) session.openChannel("exec");
-        exec.setCommand(command);
-        final var commandOutput = exec.getInputStream();
-        exec.connect(connectionTimeout);
-        processCommandOutput(commandOutput, task);
-      } finally {
-        if (nonNull(exec)) {
-          exec.disconnect();
-        }
-      }
-    }));
+    return executeTaskAsync(command,
+        task -> runSession(
+            session -> {
+              ChannelExec exec = null;
+              try {
+                exec = (ChannelExec) session.openChannel("exec");
+                exec.setCommand(command);
+
+                final var commandOutput = exec.getInputStream();
+
+                exec.connect(connectionTimeout);
+                processCommandOutput(commandOutput, task);
+              } finally {
+                if (nonNull(exec)) {
+                  exec.disconnect();
+                }
+              }
+            })
+    );
   }
 
   public Task executeSudoCommand(final String command) {
-    return executeTaskAsync(command, task -> runSession(session -> {
-      ChannelExec exec = null;
-      try {
-        exec = (ChannelExec) session.openChannel("exec");
-        exec.setCommand("sudo -S -p '' sh -c \"" + command + "\"");
-        final var commandOutput = exec.getInputStream();
-        final var outputStream = exec.getOutputStream();
-        exec.connect(connectionTimeout);
-        outputStream.write((password + "\n").getBytes());
-        outputStream.flush();
-        processCommandOutput(commandOutput, task);
-      } finally {
-        if (nonNull(exec)) {
-          exec.disconnect();
-        }
-      }
-    }));
+    return executeTaskAsync(command,
+        task -> runSession(
+            session -> {
+              ChannelExec exec = null;
+              try {
+                exec = (ChannelExec) session.openChannel("exec");
+                exec.setCommand("sudo -S -p '' sh -c \"" + command + "\"");
+
+                final var commandOutput = exec.getInputStream();
+                final var outputStream = exec.getOutputStream();
+
+                exec.connect(connectionTimeout);
+                outputStream.write((password + "\n").getBytes());
+                outputStream.flush();
+                processCommandOutput(commandOutput, task);
+              } finally {
+                if (nonNull(exec)) {
+                  exec.disconnect();
+                }
+              }
+            })
+    );
   }
 
-  public Task runSftp(
+  public <E extends Exception> Task runSftp(
       final String taskName,
-      final ThrowingConsumer<ChannelSftp> sftpRunner) {
-    return executeTaskAsync(taskName, task -> runSession(session -> {
-      ChannelSftp sftp = null;
-      try {
-        sftp = (ChannelSftp) session.openChannel("sftp");
-        sftp.connect();
-        sftpRunner.accept(sftp);
-      } finally {
-        if (nonNull(sftp)) {
-          sftp.exit();
-        }
-      }
-    }));
+      final ThrowingConsumer<ChannelSftp, E> sftpRunner
+  ) {
+    return executeTaskAsync(taskName,
+        task -> runSession(
+            session -> {
+              ChannelSftp sftp = null;
+              try {
+                sftp = (ChannelSftp) session.openChannel("sftp");
+                sftp.connect();
+                sftpRunner.accept(sftp);
+              } finally {
+                if (nonNull(sftp)) {
+                  sftp.exit();
+                }
+              }
+            }
+        )
+    );
   }
 
-  public void genKeyPair()
-      throws JSchException, IOException {
+  public void genKeyPair() throws JSchException, IOException {
     final var file = dotSsh + "/id_rsa_" + userName + "_" + hostName;
     final var keyPair = KeyPair.genKeyPair(jsch, RSA);
+
+    publicKeyPath = file + ".pub";
+
     createFile(file);
     keyPair.writePrivateKey(file);
-    publicKeyPath = file + ".pub";
+    jsch.addIdentity(file);
+
     final var charlieUserName = getProperty("user.name");
     final var charlieHostName = InetAddress.getLocalHost().getHostName();
+
     keyPair.writePublicKey(publicKeyPath, charlieUserName + "@" + charlieHostName);
     keyPair.dispose();
-    jsch.addIdentity(file);
   }
 
   @PreDestroy

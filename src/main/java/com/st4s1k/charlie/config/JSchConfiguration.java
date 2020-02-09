@@ -9,9 +9,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class JSchConfiguration {
 
+  @Value("${jsch.knownHosts.file}")
+  private String knownHostsFile;
+
   @Bean
-  public JSch getJSch(
-      final @Value("${jsch.knownHosts.file}") String knownHostsFile) throws JSchException {
+  public JSch getJSch() throws JSchException {
     final var jsch = new JSch();
     jsch.setKnownHosts(knownHostsFile);
     JSch.setConfig("StrictHostKeyChecking", "no");

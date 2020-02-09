@@ -3,8 +3,6 @@ package com.st4s1k.charlie.service;
 import com.jcraft.jsch.JSchException;
 import com.st4s1k.charlie.data.model.ChatSession;
 import com.st4s1k.charlie.data.model.Task;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -12,7 +10,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -22,166 +19,116 @@ import java.util.function.Predicate;
 import static com.jcraft.jsch.ChannelSftp.APPEND;
 import static java.lang.Integer.parseInt;
 
-@Service
-@RequiredArgsConstructor
 public class CharlieService {
 
-  private static final String USER_NAME_REGEX = "([A-Za-z0-9\\-.]+)";
-  private static final String IP_ADDRESS_REGEX =
+  private static final String USER_NAME_REGEX = "" +
+      "([A-Za-z0-9\\-.]+)";
+  private static final String IP_ADDRESS_REGEX = "" +
       "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}" +
-          "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
+      "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
   private static final String HOST_NAME_REGEX =
       "([a-z_][a-z0-9_\\-]*[$]?)";
   private static final String HOST_REGEX = "("
       + IP_ADDRESS_REGEX + "|"
       + HOST_NAME_REGEX + ")";
-  private static final String PORT_REGEX =
+  private static final String PORT_REGEX = "" +
       "([0-9]{1,4}" +
-          "|[1-5][0-9]{4}" +
-          "|6[0-4][0-9]{3}" +
-          "|65[0-4][0-9]{2}" +
-          "|655[0-2][0-9]" +
-          "|6553[0-5])";
+      "|[1-5][0-9]{4}" +
+      "|6[0-4][0-9]{3}" +
+      "|65[0-4][0-9]{2}" +
+      "|655[0-2][0-9]" +
+      "|6553[0-5])";
   private static final String HOST_INFO_REGEX = "^"
       + USER_NAME_REGEX + "@"
       + HOST_REGEX + ":"
       + PORT_REGEX + "$";
 
 
-  private final Map<Predicate<String>, Consumer<ChatSession>> operations = new HashMap<>();
+  private final String startMessage;
+  private final String helpMessage;
+  private final String publicKeyFileName;
+  private final String keyGenHint;
+  private final Map<Predicate<String>, Consumer<ChatSession>> operations;
 
-  {
-    operations.put(msg -> msg.matches("^/start\\s*$"),
+  public CharlieService(
+      final String startMessage,
+      final String helpMessage,
+      final String publicKeyFileName,
+      final String keyGenHint,
+      final Map<Predicate<String>, Consumer<ChatSession>> operations
+  ) {
+    this.startMessage = startMessage;
+    this.helpMessage = helpMessage;
+    this.publicKeyFileName = publicKeyFileName;
+    this.keyGenHint = keyGenHint;
+    this.operations = operations;
+
+    this.operations.put(msg -> msg.matches("^/start\\s*$"),
         this::showStartMessage);
-    operations.put(msg -> msg.matches("^/help\\s*$"),
+    this.operations.put(msg -> msg.matches("^/help\\s*$"),
         this::showHelpMessage);
-    operations.put(msg -> msg.matches("^/conn\\s+.+$"),
+    this.operations.put(msg -> msg.matches("^/conn\\s+.+$"),
         this::parseConnectionInfo);
-    operations.put(msg -> msg.matches("^/conn\\s*$"),
+    this.operations.put(msg -> msg.matches("^/conn\\s*$"),
         this::showConnectionInfo);
-    operations.put(msg -> msg.matches("^/password\\s+.+$"),
+    this.operations.put(msg -> msg.matches("^/password\\s+.+$"),
         this::setPassword);
-    operations.put(msg -> msg.matches("^/password\\s*$"),
+    this.operations.put(msg -> msg.matches("^/password\\s*$"),
         this::showPassword);
-    operations.put(msg -> msg.matches("^/keygen\\s*$"),
+    this.operations.put(msg -> msg.matches("^/keygen\\s*$"),
         this::keyGen);
-    operations.put(msg -> msg.matches("^/sudo\\s+.+$"),
+    this.operations.put(msg -> msg.matches("^/sudo\\s+.+$"),
         this::executeSudoCommand);
-    operations.put(msg -> msg.matches("^/keyauth\\s*$"),
+    this.operations.put(msg -> msg.matches("^/keyauth\\s*$"),
         this::switchToKeyAuthMode);
-    operations.put(msg -> msg.matches("^/cd\\s+.+$"),
+    this.operations.put(msg -> msg.matches("^/cd\\s+.+$"),
         this::cd);
-    operations.put(msg -> msg.matches("^/pwd\\s*$"),
+    this.operations.put(msg -> msg.matches("^/pwd\\s*$"),
         this::pwd);
-    operations.put(msg -> msg.matches("^/home\\s*$"),
+    this.operations.put(msg -> msg.matches("^/home\\s*$"),
         this::home);
-    operations.put(msg -> msg.matches("^/download\\s+.+$"),
+    this.operations.put(msg -> msg.matches("^/download\\s+.+$"),
         this::downloadAndSendDocumentToChat);
-    operations.put(msg -> msg.matches("^/reset\\s*$"),
+    this.operations.put(msg -> msg.matches("^/reset\\s*$"),
         this::reset);
-    operations.put(msg -> msg.matches("^/tasks\\s*$"),
+    this.operations.put(msg -> msg.matches("^/tasks\\s*$"),
         this::showRunningTasks);
-    operations.put(msg -> msg.matches("^/stopall\\s*$"),
+    this.operations.put(msg -> msg.matches("^/stopall\\s*$"),
         this::stopAllTasks);
-    operations.put(msg -> msg.matches("^/stop\\s+\\d+$"),
+    this.operations.put(msg -> msg.matches("^/stop\\s+\\d+$"),
         this::stopTask);
-    operations.put(msg -> msg.matches("^/killall\\s*$"),
+    this.operations.put(msg -> msg.matches("^/killall\\s*$"),
         this::killAllTasks);
-    operations.put(msg -> msg.matches("^/kill\\s+\\d+$"),
+    this.operations.put(msg -> msg.matches("^/kill\\s+\\d+$"),
         this::killTask);
   }
 
   private void showHelpMessage(final ChatSession chatSession) {
-    chatSession.sendResponse(""
-        + "/help - display current message"
-        + "\n\n"
-        + "/conn <user>@<host>:<port> - set connection info"
-        + "\n\n"
-        + "/conn - show connection info"
-        + "\n\n"
-        + "/password <password> - set remote user password"
-        + "\n\n"
-        + "/password - show remote user password"
-        + "\n\n"
-        + "/keygen - generate RSA key pair and get public key"
-        + "\n\n"
-        + "/sudo <command> - execute command as sudo (requires password set)"
-        + "\n\n"
-        + "/keyauth - generate RSA key pair and automatically set public key"
-        + " on remote SSH server appending it to ~/.ssh/authorized_keys file"
-        + "\n\n"
-        + "/cd <directory> - regular \"cd\" command doesn't work,"
-        + " because this SSH client runs a single command in a single session,"
-        + " and the information about current directory is stored in a variable"
-        + " associated with a specific telegram chat-user pair,"
-        + " so this is a workaround"
-        + "\n\n"
-        + "/pwd - shows the value of the current directory variable"
-        + "\n\n"
-        + "/home - change current directory to user home directory"
-        + "\n\n"
-        + "/download <file_path> - download file from remote server into chat"
-        + "\n\n"
-        + "/reset - reset connection info"
-        + "\n\n"
-        + "/tasks - list all running tasks"
-        + "\n\n"
-        + "/stopall - stop all running tasks"
-        + "\n\n"
-        + "/stop <taskId> - stop task with given ID"
-        + "\n\n"
-        + "/killall - kill all running tasks (aggressive)"
-        + "\n\n"
-        + "/kill <taskId> - kill task with given ID (aggressive)"
-        + "\n\n"
-        + "<command> - execute command on remote SSH server"
-    );
+    chatSession.sendResponse(helpMessage);
   }
 
   private void showStartMessage(final ChatSession chatSession) {
     final var name = chatSession.getId().getUser().getFirstName();
-    chatSession.sendResponse(""
-        + "Hello, " + name + ", I'm Charlie!"
-        + "\n\n"
-        + "A telegram bot SSH client.\n"
-        + "Use /help command, to get a list of available commands."
-        + "\n\n"
-        + "To connect to a server using password:\n"
-        + "1. /conn <user>@<host>:<port>\n"
-        + "2. /password <password>"
-        + "\n\n"
-        + "To connect to a server using RSA key pair:\n"
-        + "1. /conn <user>@<host>:<port>\n"
-        + "2. /keygen\n"
-        + "3. append obtained public key file content to authorized_keys\n"
-        + " (ex: cat id_rsa_charlie.pub >> ~/.ssh/authorized_keys)"
-        + "\n\n"
-        + "To execute a remote command, type anything without a leading forward slash \"/\""
-        + "\n\n"
-        + "Be aware, that this bot is running on https://www.heroku.com/ ,"
-        + " that means that, the machine on which this bot is running"
-        + " may reboot once in a while, erasing all files stored locally,"
-        + " including generated RSA keys."
-        + "\n\n"
-        + "The code for this bot is open-source:"
-        + "https://github.com/st4s1k/Charlie"
-    );
+    final var message = startMessage.replace(":userName", name);
+    chatSession.sendResponse(message);
   }
 
-  @SuppressWarnings("ResultOfMethodCallIgnored")
-  public static void createFile(final String filePath) throws IOException {
+  public static void createFile(final String filePath) {
     final var file = new File(filePath);
     createFileDirs(filePath);
-    if (!file.exists()) {
-      file.createNewFile();
+    try {
+      if (!file.exists() && !file.createNewFile()) {
+        throw new FileCreationFailedException("File already exists: " + filePath);
+      }
+    } catch (final IOException e) {
+      throw new FileCreationFailedException(e);
     }
   }
 
-  @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void createFileDirs(final String filePath) {
     final var fileDir = new File(filePath.substring(0, filePath.lastIndexOf('/')));
-    if (!fileDir.exists()) {
-      fileDir.mkdirs();
+    if (!fileDir.exists() && fileDir.mkdirs()) {
+      throw new DirectoryCreationFailedException("Failed to create directory: " + filePath);
     }
   }
 
@@ -197,15 +144,35 @@ public class CharlieService {
   private void downloadAndSendDocumentToChat(final ChatSession chatSession) {
     final var remoteFilePath = getReceivedText(chatSession)
         .replaceFirst("^/download\\s+", "");
-    chatSession.runSftp("[/download] " + remoteFilePath, sftp -> {
-      if (chatSession.getCurrentDir().isPresent()) {
-        sftp.cd(chatSession.getCurrentDir().get() + "/");
-      }
-      final var lastIndexOfForwardSlash = remoteFilePath.lastIndexOf('/');
-      final var fileName = remoteFilePath.substring(lastIndexOfForwardSlash + 1);
-      final var inputStream = sftp.get(remoteFilePath);
-      chatSession.sendDocument(fileName, inputStream, fileName);
-    });
+
+    chatSession.runSftp("[/download] " + remoteFilePath,
+        sftp -> {
+          if (chatSession.getCurrentDir().isPresent()) {
+            sftp.cd(chatSession.getCurrentDir().get() + "/");
+          }
+          final var lastIndexOfForwardSlash = remoteFilePath.lastIndexOf('/');
+          final var fileName = remoteFilePath.substring(lastIndexOfForwardSlash + 1);
+          final var inputStream = sftp.get(remoteFilePath);
+          chatSession.sendDocument(fileName, inputStream, fileName);
+        });
+  }
+
+  private void executeCommand(
+      final String command,
+      final ChatSession chatSession,
+      final Function<String, Task> commandExecutor
+  ) {
+    chatSession.getCurrentDir().ifPresentOrElse(
+        currentDir -> commandExecutor
+            .apply("cd \"" + currentDir + "\" && " + command),
+        () -> commandExecutor.apply(command));
+  }
+
+  private void executeCommand(
+      final String command,
+      final ChatSession chatSession
+  ) {
+    executeCommand(command, chatSession, chatSession::executeCommand);
   }
 
   private void executeCommand(final ChatSession chatSession) {
@@ -213,24 +180,10 @@ public class CharlieService {
     executeCommand(command, chatSession);
   }
 
-  private void executeCommand(
-      final String command,
-      final ChatSession chatSession,
-      final Function<String, Task> commandExecutor) {
-    chatSession.getCurrentDir().ifPresentOrElse(
-        currentDir -> commandExecutor.apply("cd \"" + currentDir + "\" && " + command),
-        () -> commandExecutor.apply(command));
-  }
-
-  private void executeCommand(
-      final String command,
-      final ChatSession chatSession) {
-    executeCommand(command, chatSession, chatSession::executeCommand);
-  }
-
   private void executeSudoCommand(
       final String command,
-      final ChatSession chatSession) {
+      final ChatSession chatSession
+  ) {
     executeCommand(command, chatSession, chatSession::executeSudoCommand);
   }
 
@@ -246,7 +199,8 @@ public class CharlieService {
         .findFirst()
         .ifPresentOrElse(
             e -> e.getValue().accept(chatSession),
-            () -> chatSession.sendMonoResponse("[Unknown command]"));
+            () -> chatSession.sendMonoResponse("[Unknown command]")
+        );
   }
 
   private String getReceivedText(final ChatSession chatSession) {
@@ -280,25 +234,31 @@ public class CharlieService {
   private void cd(final ChatSession chatSession) {
     final var dir = getReceivedText(chatSession)
         .replaceFirst("^/cd\\s+", "");
-    chatSession.runSftp("[/cd] " + dir, channelSftp -> {
-      if (chatSession.getCurrentDir().isPresent()) {
-        channelSftp.cd(chatSession.getCurrentDir().get());
-      }
-      channelSftp.cd(dir);
-      chatSession.setCurrentDir(channelSftp.pwd());
-    }).getFuture().thenRun(() ->
-        executeCommand("ls", chatSession));
+
+    chatSession.runSftp("[/cd] " + dir,
+        channelSftp -> {
+          if (chatSession.getCurrentDir().isPresent()) {
+            channelSftp.cd(chatSession.getCurrentDir().get());
+          }
+          channelSftp.cd(dir);
+          chatSession.setCurrentDir(channelSftp.pwd());
+        })
+        .getFuture()
+        .thenRun(() -> executeCommand("ls", chatSession));
   }
 
   private void pwd(final ChatSession chatSession) {
     chatSession.getCurrentDir()
-        .ifPresentOrElse(chatSession::sendResponse, () ->
-            chatSession.runSftp("[/cd] .", channelSftp -> {
-              channelSftp.cd(".");
-              chatSession.setCurrentDir(channelSftp.pwd());
-              chatSession.getCurrentDir()
-                  .ifPresent(chatSession::sendResponse);
-            }));
+        .ifPresentOrElse(
+            chatSession::sendResponse,
+            () -> chatSession.runSftp("[/cd] .",
+                channelSftp -> {
+                  channelSftp.cd(".");
+                  chatSession.setCurrentDir(channelSftp.pwd());
+                  chatSession.getCurrentDir()
+                      .ifPresent(chatSession::sendResponse);
+                })
+        );
   }
 
   private void home(final ChatSession chatSession) {
@@ -331,16 +291,17 @@ public class CharlieService {
     try {
       chatSession.genKeyPair();
       final var publicKeyPath = chatSession.getPublicKeyPath();
-      final var fileInputStream = new FileInputStream(publicKeyPath);
-      final var bufferedInputStream = new BufferedInputStream(fileInputStream);
-      final var publicKeyFileName = "id_rsa_charlie.pub";
-      final var caption = "Execute this command on the remote ssh server:\n" +
-          "cat /path/to/" + publicKeyFileName + " >> /path/to/.ssh/authorized_keys\n" +
-          "example: cat ./" + publicKeyFileName + " >> ~/.ssh/authorized_keys";
-      chatSession.sendDocument(publicKeyFileName, bufferedInputStream, caption);
+      try (
+          final var fileInputStream = new FileInputStream(publicKeyPath)
+      ) {
+        final var bufferedInputStream = new BufferedInputStream(fileInputStream);
+        chatSession.sendDocument(
+            publicKeyFileName,
+            bufferedInputStream,
+            keyGenHint);
+      }
     } catch (final JSchException | IOException e) {
-      e.printStackTrace();
-      chatSession.sendResponse(e.getMessage());
+      throw new KeyGenFailedException(e);
     }
   }
 
@@ -366,7 +327,6 @@ public class CharlieService {
 
   private void showRunningTasks(final ChatSession chatSession) {
     final var tasks = chatSession.getTasks();
-
     if (tasks.isEmpty()) {
       chatSession.sendMonoResponse("[No running tasks]");
     } else {
@@ -388,13 +348,16 @@ public class CharlieService {
         "     Port: " + chatSession.getPort());
   }
 
-
   private void showPassword(final ChatSession chatSession) {
-    chatSession.sendMonoResponse("Password: " + chatSession.getPassword());
+    chatSession.sendMonoResponse(
+        "Password: " + chatSession.getPassword()
+    );
   }
 
   private void reset(final ChatSession chatSession) {
     chatSession.reset();
-    chatSession.sendMonoResponse("[Connection info cleared]");
+    chatSession.sendMonoResponse(
+        "[Connection info cleared]"
+    );
   }
 }

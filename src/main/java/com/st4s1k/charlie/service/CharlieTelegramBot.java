@@ -4,33 +4,22 @@ import com.jcraft.jsch.JSch;
 import com.st4s1k.charlie.data.model.ChatSession;
 import com.st4s1k.charlie.data.model.ChatSessionId;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import javax.annotation.PreDestroy;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-@Component
 @RequiredArgsConstructor
 public class CharlieTelegramBot extends TelegramLongPollingBot {
 
-  private final CharlieService charlieService;
   private final JSch jsch;
-
-  @Value("${charlie.token}")
-  private String token;
-
-  @Value("${charlie.username}")
-  private String username;
-
-  @Value("${jsch.dotSsh}")
-  private String dotSsh;
-
-  private Map<ChatSessionId, ChatSession> sessions = new HashMap<>();
+  private final CharlieService charlieService;
+  private final String token;
+  private final String username;
+  private final String dotSsh;
+  private final Map<ChatSessionId, ChatSession> sessions;
 
   @Override
   public String getBotUsername() {
@@ -44,27 +33,26 @@ public class CharlieTelegramBot extends TelegramLongPollingBot {
 
   @Override
   public void onUpdateReceived(final Update update) {
-    try {
-      if (update.hasMessage() && update.getMessage().hasText()) {
-        final var message = update.getMessage();
-        final var chat = message.getChat();
-        final var user = message.getFrom();
-        final var chatSessionId = new ChatSessionId(chat, user);
-        sessions.computeIfAbsent(chatSessionId, id ->
-            new ChatSession(id, dotSsh, this, jsch));
-        final var chatSession = sessions.get(chatSessionId);
-        chatSession.setUpdate(update);
-        CompletableFuture
-            .runAsync(() -> charlieService.parse(chatSession));
-      }
-    } catch (Throwable e) {
-      e.printStackTrace();
+    if (update.hasMessage() && update.getMessage().hasText()) {
+      final var message = update.getMessage();
+      final var chat = message.getChat();
+      final var user = message.getFrom();
+      final var chatSessionId = new ChatSessionId(chat, user);
+
+      sessions.computeIfAbsent(chatSessionId,
+          id -> new ChatSession(id, dotSsh, this, jsch));
+
+      final var chatSession = sessions.get(chatSessionId);
+
+      chatSession.setUpdate(update);
+
+      CompletableFuture
+          .runAsync(() -> charlieService.parse(chatSession));
     }
   }
 
   @PreDestroy
   public void cleanUp() {
-    sessions.values()
-        .forEach(ChatSession::reset);
+    sessions.values().forEach(ChatSession::reset);
   }
 }

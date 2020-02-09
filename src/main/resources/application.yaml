@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8080}
+  port: '${PORT:8080}'
 jsch:
   dotSsh: '.ssh'
   knownHosts.file: '.ssh/known_hosts'
@@ -7,3 +7,101 @@ jsch:
 charlie:
   token: '767946678:AAGhduP0bRqNpubiS8h77qUXp7DzGdgB3p0'
   username: 'charlie12bot'
+  publicKeyFileName: 'id_rsa_charlie.pub'
+  messages:
+    help:
+      '/help - display current message
+
+
+      /conn <user>@<host>:<port> - set connection info
+
+
+      /conn - show connection info
+
+
+      /password <password> - set remote user password
+
+
+      /password - show remote user password
+
+
+      /keygen - generate RSA key pair and get public key
+
+
+      /sudo <command> - execute command as sudo (requires password set)
+
+
+      /keyauth - generate RSA key pair and automatically set public key
+      on remote SSH server appending it to ~/.ssh/authorized_keys file
+
+
+      /cd <directory> - regular "cd" command doesn''t work,
+      because this SSH client runs a single command in a single session,
+      and the information about current directory is stored in a variable
+      associated with a specific telegram chat-user pair,
+      so this is a workaround
+
+
+      /pwd - shows the value of the current directory variable
+
+
+      /home - change current directory to user home directory
+
+
+      /download <file_path> - download file from remote server into chat
+
+
+      /reset - reset connection info
+
+
+      /tasks - list all running tasks
+
+
+      /stopall - stop all running tasks
+
+
+      /stop <taskId> - stop task with given ID
+
+
+      /killall - kill all running tasks (aggressive)
+
+
+      /kill <taskId> - kill task with given ID (aggressive)
+
+
+      <command> - execute command on remote SSH server'
+    start:
+      'Hello, :userName, I''m Charlie!
+
+
+      A telegram bot SSH client.
+      Use /help command, to get a list of available commands.
+
+
+      To connect to a server using password:
+      1. /conn <user>@<host>:<port>
+      2. /password <password>
+
+
+      To connect to a server using RSA key pair:
+      1. /conn <user>@<host>:<port>
+      2. /keygen
+      3. append obtained public key file content to authorized_keys
+      (ex: cat id_rsa_charlie.pub >> ~/.ssh/authorized_keys)
+
+
+      To execute a remote command, type anything without a leading forward slash "/"
+
+
+      Be aware, that this bot is running on https://www.heroku.com/ ,
+      that means that, the machine on which this bot is running
+      may reboot once in a while, erasing all files stored locally,
+      including generated RSA keys.
+
+
+      The code for this bot is open-source:
+      https://github.com/st4s1k/Charlie'
+    keyGenHint:
+      'Execute this command on the remote ssh server:
+      cat /path/to/${charlie.publicKeyFileName} >> /path/to/.ssh/authorized_keys
+      example: cat ./${charlie.publicKeyFileName} >> ~/.ssh/authorized_keys'
