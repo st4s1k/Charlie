@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import javax.annotation.PreDestroy;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -159,24 +160,26 @@ public class ChatSession {
   private void processCommandOutput(
       final InputStream commandOutput,
       final Task task
-  ) throws InterruptedException {
-    final var outputBuffer = new StringBuilder();
+  ) throws InterruptedException, IOException {
+    final var outputBuffer = new ByteArrayOutputStream();
 
     int readByte = readByte(commandOutput, task);
     long start = currentTimeMillis();
 
     while (!(readByte == -1 || task.isCancelled())) {
-      outputBuffer.append((char) readByte);
+      outputBuffer.write(readByte);
       if ((currentTimeMillis() - start) > commandOutputTimeout && readByte == '\n') {
         start = currentTimeMillis();
+        outputBuffer.flush();
         sendResponse("[" + task.getId() + "]\n"
             + outputBuffer.toString());
-        outputBuffer.delete(0, outputBuffer.length());
+        outputBuffer.reset();
       }
       readByte = readByte(commandOutput, task);
     }
 
-    if (outputBuffer.length() > 0) {
+    if (outputBuffer.size() > 0) {
+      outputBuffer.flush();
       sendResponse("[" + task.getId() + "]\n"
           + outputBuffer.toString());
     }
