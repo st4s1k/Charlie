@@ -239,72 +239,65 @@ public class ChatSession {
   }
 
   public Task executeCommand(final String command) {
-    return executeTaskAsync(command,
-        task -> runSession(
-            session -> {
-              ChannelExec exec = null;
-              try {
-                exec = (ChannelExec) session.openChannel("exec");
-                exec.setCommand(command);
+    return executeTaskAsync(command, task ->
+        runSession(session -> {
+          ChannelExec exec = null;
+          try {
+            exec = (ChannelExec) session.openChannel("exec");
+            exec.setCommand(command);
 
-                final var commandOutput = exec.getInputStream();
+            final var commandOutput = exec.getInputStream();
 
-                exec.connect(connectionTimeout);
-                processCommandOutput(commandOutput, task);
-              } finally {
-                if (nonNull(exec)) {
-                  exec.disconnect();
-                }
-              }
-            })
-    );
+            exec.connect(connectionTimeout);
+            processCommandOutput(commandOutput, task);
+          } finally {
+            if (nonNull(exec)) {
+              exec.disconnect();
+            }
+          }
+        }));
   }
 
   public Task executeSudoCommand(final String command) {
-    return executeTaskAsync(command,
-        task -> runSession(
-            session -> {
-              ChannelExec exec = null;
-              try {
-                exec = (ChannelExec) session.openChannel("exec");
-                exec.setCommand("sudo -S -p '' sh -c \"" + command + "\"");
+    return executeTaskAsync(command, task ->
+        runSession(session -> {
+          ChannelExec exec = null;
+          try {
+            exec = (ChannelExec) session.openChannel("exec");
+            exec.setCommand("sudo -S -p '' sh -c \"" + command + "\"");
 
-                final var commandOutput = exec.getInputStream();
-                final var outputStream = exec.getOutputStream();
+            final var commandOutput = exec.getInputStream();
+            final var outputStream = exec.getOutputStream();
 
-                exec.connect(connectionTimeout);
-                outputStream.write((password + "\n").getBytes());
-                outputStream.flush();
-                processCommandOutput(commandOutput, task);
-              } finally {
-                if (nonNull(exec)) {
-                  exec.disconnect();
-                }
-              }
-            })
-    );
+            exec.connect(connectionTimeout);
+            outputStream.write((password + "\n").getBytes());
+            outputStream.flush();
+            processCommandOutput(commandOutput, task);
+          } finally {
+            if (nonNull(exec)) {
+              exec.disconnect();
+            }
+          }
+        }));
   }
 
   public <E extends Exception> Task runSftp(
       final String taskName,
       final ThrowingConsumer<ChannelSftp, E> sftpRunner
   ) {
-    return executeTaskAsync(taskName,
-        task -> runSession(
-            session -> {
-              ChannelSftp sftp = null;
-              try {
-                sftp = (ChannelSftp) session.openChannel("sftp");
-                sftp.connect();
-                sftpRunner.accept(sftp);
-              } finally {
-                if (nonNull(sftp)) {
-                  sftp.exit();
-                }
-              }
+    return executeTaskAsync(taskName, task ->
+        runSession(session -> {
+          ChannelSftp sftp = null;
+          try {
+            sftp = (ChannelSftp) session.openChannel("sftp");
+            sftp.connect();
+            sftpRunner.accept(sftp);
+          } finally {
+            if (nonNull(sftp)) {
+              sftp.exit();
             }
-        )
-    );
+          }
+        }));
   }
 
   public void genKeyPair() throws JSchException, IOException {

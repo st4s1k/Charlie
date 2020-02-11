@@ -199,8 +199,7 @@ public class CharlieService {
         .findFirst()
         .ifPresentOrElse(
             e -> e.getValue().accept(chatSession),
-            () -> chatSession.sendMonoResponse("[Unknown command]")
-        );
+            () -> chatSession.sendMonoResponse("[Unknown command]"));
   }
 
   private String getReceivedText(final ChatSession chatSession) {
@@ -257,16 +256,17 @@ public class CharlieService {
                   chatSession.setCurrentDir(channelSftp.pwd());
                   chatSession.getCurrentDir()
                       .ifPresent(chatSession::sendResponse);
-                })
-        );
+                }));
   }
 
   private void home(final ChatSession chatSession) {
-    chatSession.runSftp("[/home]", channelSftp -> {
-      channelSftp.cd(channelSftp.getHome());
-      chatSession.setCurrentDir(channelSftp.pwd());
-    }).getFuture().thenRun(() ->
-        executeCommand("ls", chatSession));
+    chatSession.runSftp("[/home]",
+        channelSftp -> {
+          channelSftp.cd(channelSftp.getHome());
+          chatSession.setCurrentDir(channelSftp.pwd());
+        })
+        .getFuture()
+        .thenRun(() -> executeCommand("ls", chatSession));
   }
 
   private void setPassword(final ChatSession chatSession) {
@@ -342,22 +342,17 @@ public class CharlieService {
   }
 
   private void showConnectionInfo(final ChatSession chatSession) {
-    chatSession.sendMonoResponse("" +
-        "User name: " + chatSession.getUserName() + "\n" +
+    chatSession.sendMonoResponse("User name: " + chatSession.getUserName() + "\n" +
         "Host name: " + chatSession.getHostName() + "\n" +
         "     Port: " + chatSession.getPort());
   }
 
   private void showPassword(final ChatSession chatSession) {
-    chatSession.sendMonoResponse(
-        "Password: " + chatSession.getPassword()
-    );
+    chatSession.sendMonoResponse("Password: " + chatSession.getPassword());
   }
 
   private void reset(final ChatSession chatSession) {
     chatSession.reset();
-    chatSession.sendMonoResponse(
-        "[Connection info cleared]"
-    );
+    chatSession.sendMonoResponse("[Connection info cleared]");
   }
 }

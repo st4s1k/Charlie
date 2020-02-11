@@ -75,18 +75,25 @@ charlie:
 
 
       A telegram bot SSH client.
+
       Use /help command, to get a list of available commands.
 
 
       To connect to a server using password:
+
       1. /conn <user>@<host>:<port>
+
       2. /password <password>
 
 
       To connect to a server using RSA key pair:
+
       1. /conn <user>@<host>:<port>
+
       2. /keygen
+
       3. append obtained public key file content to authorized_keys
+
       (ex: cat id_rsa_charlie.pub >> ~/.ssh/authorized_keys)
 
 
@@ -94,12 +101,16 @@ charlie:
 
 
       Be aware, that this bot is running on https://www.heroku.com/ ,
+
       that means that, the machine on which this bot is running
+
       may reboot once in a while, erasing all files stored locally,
+
       including generated RSA keys.
 
 
       The code for this bot is open-source:
+
       https://github.com/st4s1k/Charlie'
     keyGenHint:
       'Execute this command on the remote ssh server:
