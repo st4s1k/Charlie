@@ -17,17 +17,13 @@
   <name>Charlie</name>
 
   <properties>
-    <heroku.appName>${project.artifactId}-${project.version}</heroku.appName>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>11</java.version>
-    <!-- plugins versions -->
-    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-    <maven-assembly-plugin.version>3.1.1</maven-assembly-plugin.version>
     <!-- dependencies versions -->
     <telegrambots.version>4.5</telegrambots.version>
     <lombok.version>1.18.10</lombok.version>
     <jsch.version>0.1.11</jsch.version>
-    <javax.mail.version>1.6.2</javax.mail.version>
+    <commons.version>3.9</commons.version>
   </properties>
 
   <dependencies>
@@ -61,9 +57,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.sun.mail</groupId>
-      <artifactId>javax.mail</artifactId>
-      <version>${javax.mail.version}</version>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>${commons.version}</version>
     </dependency>
   </dependencies>
 

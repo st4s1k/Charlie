@@ -8,6 +8,7 @@ import lombok.Getter;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.annotation.PreDestroy;
 import java.io.ByteArrayOutputStream;
@@ -25,6 +26,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.util.Objects.nonNull;
 import static lombok.AccessLevel.NONE;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -106,7 +108,6 @@ public class ChatSession {
       session.connect();
       operation.accept(session);
     } catch (final Exception e) {
-      sendResponse(e.getMessage());
       throw new SessionRunFailedException(e);
     } finally {
       if (nonNull(session)) {
@@ -134,7 +135,7 @@ public class ChatSession {
           .enableMarkdown(markdown);
       try {
         charlie.execute(sendMessageRequest);
-      } catch (final Exception e) {
+      } catch (final TelegramApiException e) {
         throw new ResponseSendFailedException(e);
       }
     }
@@ -151,8 +152,7 @@ public class ChatSession {
         .setCaption(caption);
     try {
       charlie.execute(sendDocumentRequest);
-    } catch (final Exception e) {
-      sendResponse(e.getMessage());
+    } catch (final TelegramApiException e) {
       throw new DocumentSendFailedException(e);
     }
   }
@@ -227,6 +227,9 @@ public class ChatSession {
           try {
             operation.accept(thisTask);
           } catch (final Exception e) {
+            Optional.ofNullable(getRootCause(e))
+                .map(Throwable::getMessage)
+                .ifPresent(this::sendResponse);
             throw new TaskExecutionFailedException(e);
           }
         });
